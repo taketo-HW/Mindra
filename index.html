@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Mindra</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="toolbar">
+    <button id="open" type="button">Open MD file</button>
+    <button id="new" type="button">New</button>
+    <button id="add-child" type="button" title="Add a child to the selected node (Tab)">Add child</button>
+    <button id="add-parent" type="button" title="Add a parent above the selected node">Add parent</button>
+    <button id="add-many" type="button" title="Add several children at once (one per line)">Add many</button>
+    <button id="rename" type="button" title="Rename the selected node (Enter, or double-click)">Rename</button>
+    <button id="settings" type="button" title="Theme, colors, and font">Settings</button>
+    <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
+    <button id="zoom-in" type="button" aria-label="Zoom in">＋</button>
+    <span id="status" class="status">Open a file to begin</span>
+  </header>
+  <main id="view" class="view"></main>
+
+  <dialog id="new-dialog">
+    <form method="dialog">
+      <h2>New diagram type</h2>
+      <label><input type="radio" name="view" value="mindmap" checked> Mind map</label>
+      <label class="disabled"><input type="radio" name="view" value="flowchart" disabled> Flowchart (coming soon)</label>
+      <div class="dialog-actions">
+        <button id="new-cancel" type="button">Cancel</button>
+        <button id="new-confirm" type="submit">Choose location</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="multi-dialog">
+    <form method="dialog">
+      <h2>Add children</h2>
+      <p class="hint">One name per line.</p>
+      <textarea id="multi-text" rows="6" cols="36"></textarea>
+      <div class="dialog-actions">
+        <button id="multi-cancel" type="button">Cancel</button>
+        <button id="multi-confirm" type="submit">Add</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog">
+    <form method="dialog">
+      <h2>Settings</h2>
+      <label>Theme
+        <select id="set-theme">
+          <option value="system">System (follow OS)</option>
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="black">Black</option>
+          <option value="pink">Pink</option>
+          <option value="blue">Blue</option>
+          <option value="green">Green</option>
+        </select>
+      </label>
+      <label>Font
+        <select id="set-font">
+          <option value="system">System</option>
+          <option value="mincho">Mincho (serif)</option>
+          <option value="rounded">Rounded</option>
+          <option value="mono">Monospace</option>
+        </select>
+      </label>
+      <label>Line color <input id="set-line" type="color"></label>
+      <label>Text color <input id="set-text" type="color"></label>
+      <label>Comment color <input id="set-comment" type="color"></label>
+      <h3 class="section">Selected item color</h3>
+      <p class="hint">Select an item on the map, then click a color.</p>
+      <div id="item-swatches" class="swatches"></div>
+      <h3 class="section">Item colors</h3>
+      <div id="set-palette"></div>
+      <div class="dialog-actions">
+        <button id="set-reset" type="button">Reset to default</button>
+        <button id="set-close" type="submit">Close</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="src/parse.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/watch.js"></script>
+  <script src="src/edit.js"></script>
+  <script src="src/app.js"></script>
+</body>
+</html>

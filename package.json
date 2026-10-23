@@ -1,0 +1,9 @@
+{
+  "name": "mindra",
+  "private": true,
+  "description": "AI と人間が同じ Markdown を共有する、サーバーレスのマインドマップビューア",
+  "type": "module",
+  "scripts": {
+    "test": "node --test"
+  }
+}

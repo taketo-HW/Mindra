@@ -1,0 +1,479 @@
+/* 色はすべて変数にする（テーマごとに切り替える）。フォントは --font。
+   テーマは <html> の data-theme で決まる。既定はライト。 */
+:root {
+  --font: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", sans-serif;
+  color-scheme: light;
+}
+
+/* ライト（既定） */
+:root,
+:root[data-theme="light"] {
+  --bg: #fafafa;
+  --panel: #fff;
+  --fg: #222222;
+  --muted: #555555;
+  --border: #dddddd;
+  --control-border: #bbbbbb;
+  --node-border: #aaaaaa;
+  --node-bg: #ffffff;
+  --root-bg: #e8f0fa;
+  --root-border: #3a6ea5;
+  --heading-bg: #eef5ea;
+  --heading-border: #6b8e5a;
+  --line: #8a96a3;
+  --accent: #e0822e;
+  --note: #9a7412;
+  --note-border: #d9b25a;
+  --comment-fg: #666666;
+  --hover: rgba(58, 110, 165, 0.25);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16181d;
+  --panel: #1f232b;
+  --fg: #e6e6e6;
+  --muted: #b0b7c3;
+  --border: #333a45;
+  --control-border: #5a6373;
+  --node-border: #5a6373;
+  --node-bg: #262c36;
+  --root-bg: #1d3350;
+  --root-border: #6aa3e0;
+  --heading-bg: #1f3322;
+  --heading-border: #7fae6e;
+  --line: #7d8794;
+  --accent: #f0a050;
+  --note: #f0c870;
+  --note-border: #b8923e;
+  --comment-fg: #b0b7c3;
+  --hover: rgba(106, 163, 224, 0.35);
+}
+
+:root[data-theme="black"] {
+  color-scheme: dark;
+  --bg: #000000;
+  --panel: #0c0c0c;
+  --fg: #f0f0f0;
+  --muted: #a0a0a0;
+  --border: #2a2a2a;
+  --control-border: #555555;
+  --node-border: #555555;
+  --node-bg: #141414;
+  --root-bg: #1c1c1c;
+  --root-border: #cccccc;
+  --heading-bg: #181818;
+  --heading-border: #888888;
+  --line: #777777;
+  --accent: #ffffff;
+  --note: #e0c070;
+  --note-border: #7a6430;
+  --comment-fg: #aaaaaa;
+  --hover: rgba(255, 255, 255, 0.25);
+}
+
+:root[data-theme="pink"] {
+  --bg: #fff5f8;
+  --panel: #ffffff;
+  --fg: #4a2c3a;
+  --muted: #8a6276;
+  --border: #f1d3de;
+  --control-border: #e4a9c0;
+  --node-border: #e7a6bd;
+  --node-bg: #ffffff;
+  --root-bg: #ffd6e7;
+  --root-border: #e0557f;
+  --heading-bg: #ffeaf3;
+  --heading-border: #d6628e;
+  --line: #e899b4;
+  --accent: #e0557f;
+  --note: #b5366a;
+  --note-border: #e7a6bd;
+  --comment-fg: #8a6276;
+  --hover: rgba(224, 85, 127, 0.25);
+}
+
+:root[data-theme="blue"] {
+  --bg: #f2f7fd;
+  --panel: #ffffff;
+  --fg: #1d3557;
+  --muted: #4a6283;
+  --border: #d4e2f2;
+  --control-border: #9fbbdc;
+  --node-border: #8fb0d8;
+  --node-bg: #ffffff;
+  --root-bg: #cfe3fb;
+  --root-border: #2f6fb3;
+  --heading-bg: #e2eefb;
+  --heading-border: #4f86c6;
+  --line: #6d9bd0;
+  --accent: #2f6fb3;
+  --note: #2f5f96;
+  --note-border: #8fb0d8;
+  --comment-fg: #4a6283;
+  --hover: rgba(47, 111, 179, 0.25);
+}
+
+:root[data-theme="green"] {
+  --bg: #f4faf4;
+  --panel: #ffffff;
+  --fg: #1f3b24;
+  --muted: #4f6b53;
+  --border: #d3e7d4;
+  --control-border: #9ec8a2;
+  --node-border: #8fbf96;
+  --node-bg: #ffffff;
+  --root-bg: #cdeccf;
+  --root-border: #2f8a4a;
+  --heading-bg: #e3f3e4;
+  --heading-border: #4f9a62;
+  --line: #6fae7d;
+  --accent: #2f8a4a;
+  --note: #2f7a40;
+  --note-border: #8fbf96;
+  --comment-fg: #4f6b53;
+  --hover: rgba(47, 138, 74, 0.25);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+/* 高さはツールバーの残り。ツールバーが折り返しても、ページ全体はスクロールさせない。 */
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--fg);
+  background: var(--bg);
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.toolbar button,
+.toolbar select {
+  padding: 4px 12px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--fg);
+  cursor: pointer;
+}
+
+.toolbar button:disabled {
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+.toolbar label {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+/* 項目の色の見本（7 色のパステル） */
+.swatches {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.swatch {
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.swatch-none {
+  background: var(--panel);
+  font-size: 11px;
+  line-height: 18px;
+  color: var(--muted);
+}
+
+.swatch:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+dialog {
+  background: var(--panel);
+  color: var(--fg);
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+}
+
+#new-dialog,
+#multi-dialog {
+  padding: 16px 24px;
+}
+
+#new-dialog h2,
+#multi-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+#new-dialog label {
+  display: block;
+  margin: 8px 0;
+}
+
+#new-dialog label.disabled {
+  color: var(--muted);
+}
+
+#multi-dialog .hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#multi-text {
+  width: 100%;
+  background: var(--bg);
+  color: var(--fg);
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  font: inherit;
+}
+
+.dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.status {
+  margin-left: 8px;
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.view {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+}
+
+/* マインドマップ: 根を左に置き、枝を右へ伸ばす。線は SVG で引く。 */
+.mm {
+  position: relative;
+}
+
+.mm-canvas {
+  position: relative;
+  transform-origin: top left;
+}
+
+.mm-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.mm-line {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+  stroke-linecap: round;
+}
+
+.mm-line-1 {
+  stroke-width: 3;
+}
+
+.mm-node {
+  position: absolute;
+  white-space: nowrap;
+}
+
+.mm-label {
+  display: inline-block;
+  padding: 6px 12px;
+  border: 1px solid var(--node-border);
+  border-radius: 16px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font: inherit;
+  text-align: left;
+  white-space: pre-wrap;
+}
+
+.mm-kind-root {
+  padding: 10px 18px;
+  border-width: 2px;
+  border-color: var(--root-border);
+  font-size: 20px;
+  font-weight: bold;
+  background: var(--root-bg);
+}
+
+.mm-kind-heading {
+  border-color: var(--heading-border);
+  background: var(--heading-bg);
+  font-weight: bold;
+}
+
+.mm-label:hover {
+  box-shadow: 0 0 0 2px var(--hover);
+}
+
+.mm-label.is-selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.mm-toggle {
+  position: absolute;
+  right: -14px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 0 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 10px;
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--muted);
+  cursor: pointer;
+}
+
+/* コメント: ノードの下に、小さな文字で出す（枠や背景はつけない） */
+.mm-comment,
+.mm-comment-input {
+  margin-top: 2px;
+  max-width: 220px;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--comment-fg);
+  white-space: pre-wrap;
+}
+
+.mm-comment-input {
+  display: block;
+  width: 220px;
+  padding: 2px 4px;
+  border: 1px solid var(--note-border);
+  border-radius: 4px;
+  background: var(--panel);
+  font: inherit;
+  font-size: 11px;
+  resize: vertical;
+}
+
+/* 項目の本体: 角のボタンの基準になる */
+.mm-head {
+  position: relative;
+  white-space: nowrap;
+}
+
+/* 左上の角の「＋ comment」: 選んだときか、ノードに載せたときだけ見える（コメントの文と重ならない） */
+.mm-add-note {
+  position: absolute;
+  left: -12px;
+  top: -12px;
+  height: 22px;
+  padding: 0 8px;
+  border: 1px solid var(--note-border);
+  border-radius: 11px;
+  background: var(--panel);
+  color: var(--note);
+  font-size: 11px;
+  cursor: pointer;
+  display: none;
+}
+
+.mm-node:hover .mm-add-note,
+.mm-node:has(.is-selected) .mm-add-note {
+  display: block;
+}
+
+/* 右下の角の「＋」: 選んだときか、ノードに載せたときだけ見える */
+.mm-add {
+  position: absolute;
+  right: -12px;
+  bottom: -12px;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--accent);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--accent);
+  font-size: 16px;
+  line-height: 20px;
+  cursor: pointer;
+  display: none;
+}
+
+.mm-node:hover .mm-add,
+.mm-node:has(.is-selected) .mm-add {
+  display: block;
+}
+
+.mm-input {
+  padding: 5px 10px;
+  border: 2px solid var(--accent);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--fg);
+  font: inherit;
+  min-width: 8em;
+}
+
+/* 設定ダイアログ: 項目名と入力を、2 列に並べる */
+#settings-dialog {
+  position: fixed;
+  top: 56px;
+  right: 16px;
+  margin: 0;
+  padding: 16px 24px;
+  min-width: 360px;
+  max-height: calc(100vh - 80px);
+  overflow: auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+#settings-dialog .hint {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+#settings-dialog h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+#settings-dialog label {
+  display: grid;
+  grid-template-columns: 9em 1fr;
+  gap: 8px;
+  align-items: center;
+  margin: 8px 0;
+}
+
+#settings-dialog select,
+#settings-dialog input[type="color"] {
+  width: 100%;
+  font: inherit;
+}
