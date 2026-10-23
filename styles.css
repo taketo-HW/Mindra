@@ -218,13 +218,11 @@ dialog {
   border-radius: 8px;
 }
 
-#new-dialog,
-#multi-dialog {
+#new-dialog {
   padding: 16px 24px;
 }
 
-#new-dialog h2,
-#multi-dialog h2 {
+#new-dialog h2 {
   margin: 0 0 12px;
   font-size: 16px;
 }
@@ -236,21 +234,6 @@ dialog {
 
 #new-dialog label.disabled {
   color: var(--muted);
-}
-
-#multi-dialog .hint {
-  margin: 0 0 8px;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-#multi-text {
-  width: 100%;
-  background: var(--bg);
-  color: var(--fg);
-  border: 1px solid var(--control-border);
-  border-radius: 4px;
-  font: inherit;
 }
 
 .dialog-actions {
@@ -343,19 +326,6 @@ dialog {
   outline-offset: 2px;
 }
 
-.mm-toggle {
-  position: absolute;
-  right: -14px;
-  top: 50%;
-  transform: translateY(-50%);
-  padding: 0 6px;
-  border: 1px solid var(--control-border);
-  border-radius: 10px;
-  background: var(--panel);
-  font-size: 12px;
-  color: var(--muted);
-  cursor: pointer;
-}
 
 /* コメント: ノードの下に、小さな文字で出す（枠や背景はつけない） */
 .mm-comment,
@@ -384,50 +354,6 @@ dialog {
 .mm-head {
   position: relative;
   white-space: nowrap;
-}
-
-/* 左上の角の「＋ comment」: 選んだときか、ノードに載せたときだけ見える（コメントの文と重ならない） */
-.mm-add-note {
-  position: absolute;
-  left: -12px;
-  top: -12px;
-  height: 22px;
-  padding: 0 8px;
-  border: 1px solid var(--note-border);
-  border-radius: 11px;
-  background: var(--panel);
-  color: var(--note);
-  font-size: 11px;
-  cursor: pointer;
-  display: none;
-}
-
-.mm-node:hover .mm-add-note,
-.mm-node:has(.is-selected) .mm-add-note {
-  display: block;
-}
-
-/* 右下の角の「＋」: 選んだときか、ノードに載せたときだけ見える */
-.mm-add {
-  position: absolute;
-  right: -12px;
-  bottom: -12px;
-  width: 22px;
-  height: 22px;
-  padding: 0;
-  border: 1px solid var(--accent);
-  border-radius: 50%;
-  background: var(--panel);
-  color: var(--accent);
-  font-size: 16px;
-  line-height: 20px;
-  cursor: pointer;
-  display: none;
-}
-
-.mm-node:hover .mm-add,
-.mm-node:has(.is-selected) .mm-add {
-  display: block;
 }
 
 .mm-input {
@@ -476,4 +402,102 @@ dialog {
 #settings-dialog input[type="color"] {
   width: 100%;
   font: inherit;
+}
+
+/* 右側の縦の並び: 上から「＋」（子を追加）、「−」（折りたたみ）、「＊」（コメントと色） */
+.mm-tools {
+  position: absolute;
+  right: -30px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+}
+
+.mm-tools button {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--control-border);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 18px;
+  cursor: pointer;
+}
+
+.mm-add {
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
+}
+
+.mm-star {
+  border-color: var(--note-border) !important;
+  color: var(--note) !important;
+}
+
+/* ＋ と ＊ は、選んだときか、ノードに載せたときだけ見える。− は子があるとき常に見える。 */
+.mm-tools .mm-add,
+.mm-tools .mm-star {
+  visibility: hidden;
+}
+
+.mm-node:hover .mm-add,
+.mm-node:hover .mm-star,
+.mm-node:has(.is-selected) .mm-add,
+.mm-node:has(.is-selected) .mm-star {
+  visibility: visible;
+}
+
+/* ＊の横に出すメニュー: コメントと、項目の色（ノードの配置には影響しない） */
+.mm-star-wrap {
+  position: relative;
+}
+
+.mm-menu {
+  position: absolute;
+  left: 32px;
+  top: -10px;
+  z-index: 20;
+  padding: 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 8px;
+  background: var(--panel);
+  white-space: normal;
+  width: max-content;
+}
+
+.mm-menu-comment {
+  display: block;
+  margin-bottom: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--note-border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--note);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mm-menu-colors {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+}
+
+/* 折りたたみの数（+3）は、円に収まらないので、横に広げる */
+.mm-tools .mm-toggle {
+  width: auto;
+  padding: 0 6px;
+  border-radius: 11px;
+  font-size: 11px;
+}
+
+/* ＊のメニューを開いたノードは、一番手前に出す（後ろのノードや線に隠れない） */
+.mm-node:has(.mm-menu) {
+  z-index: 30;
 }

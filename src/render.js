@@ -10,6 +10,7 @@
   const PAD = 24; // 図の外側の余白
   const GAP_X = 56; // 列どうしの間隔
   const GAP_Y = 14; // 同じ親の子どうしの間隔
+  const GAP_TOPIC = 48; // 一番上の題目どうしの間隔
 
   function el(tag, className, text) {
     const node = document.createElement(tag);
@@ -79,6 +80,30 @@
     return area;
   }
 
+  // ＊のメニュー。コメントを書く、項目の色を選ぶ。
+  function renderMenu(entry, state) {
+    const menu = el('div', 'mm-menu');
+    const note = el('button', 'mm-menu-comment', entry.node.comment ? 'Edit comment' : 'Comment');
+    note.type = 'button';
+    note.addEventListener('click', () => state.onComment(entry.id));
+    menu.appendChild(note);
+    const swatches = el('div', 'mm-menu-colors');
+    const none = el('button', 'swatch swatch-none', '×');
+    none.type = 'button';
+    none.title = 'No color';
+    none.addEventListener('click', () => state.onColor(entry.id, null));
+    swatches.appendChild(none);
+    for (const hex of state.palette) {
+      const button = el('button', 'swatch');
+      button.type = 'button';
+      button.style.background = hex;
+      button.addEventListener('click', () => state.onColor(entry.id, hex));
+      swatches.appendChild(button);
+    }
+    menu.appendChild(swatches);
+    return menu;
+  }
+
   // 1 つのノードの DOM（位置は後で決める）。
   function renderNodeBox(entry, state) {
     const box = el('div', 'mm-node');
@@ -107,13 +132,15 @@
     } else if (entry.node.comment && entry.node.comment.length) {
       box.appendChild(el('div', 'mm-comment', entry.node.comment.join('\n')));
     }
-    // 左下の角の「＋ comment」: コメントを足す（あれば編集する）。
-    if (state.editing !== entry.id && state.commenting !== entry.id) {
-      const note = el('button', 'mm-add-note', '+ comment');
-      note.type = 'button';
-      note.title = entry.node.comment ? 'Edit comment' : 'Add comment';
-      note.addEventListener('click', () => state.onComment(entry.id));
-      head.appendChild(note);
+    // 右側に縦に並ぶ道具: 上から「＋」（子を追加）、「−」（折りたたみ）、「＊」（コメントと色）。
+    const editing = state.editing === entry.id || state.commenting === entry.id;
+    const tools = el('div', 'mm-tools');
+    if (!editing) {
+      const add = el('button', 'mm-add', '+');
+      add.type = 'button';
+      add.title = 'Add child';
+      add.addEventListener('click', () => state.onAddChild(entry.id));
+      tools.appendChild(add);
     }
     if (entry.hasChildren) {
       const collapsed = state.collapsed.has(entry.id);
@@ -121,16 +148,20 @@
       toggle.type = 'button';
       toggle.title = collapsed ? 'Expand' : 'Collapse';
       toggle.addEventListener('click', () => state.onToggle(entry.id));
-      head.appendChild(toggle);
+      tools.appendChild(toggle);
     }
-    // 右下の角の「＋」。選んだときか、ノードに載せたときだけ見える。押すと子を足す。
-    if (state.editing !== entry.id && state.commenting !== entry.id) {
-      const add = el('button', 'mm-add', '+');
-      add.type = 'button';
-      add.title = 'Add child';
-      add.addEventListener('click', () => state.onAddChild(entry.id));
-      head.appendChild(add);
+    if (!editing) {
+      // ＊の横に、メニューを出す（ノードの下には出さない）。
+      const starWrap = el('div', 'mm-star-wrap');
+      const star = el('button', 'mm-star', '＊');
+      star.type = 'button';
+      star.title = 'Comment and color';
+      star.addEventListener('click', () => state.onMenu(entry.id));
+      starWrap.appendChild(star);
+      if (state.menu === entry.id) starWrap.appendChild(renderMenu(entry, state));
+      tools.appendChild(starWrap);
     }
+    head.appendChild(tools);
     return box;
   }
 
@@ -192,9 +223,11 @@
     return svg;
   }
 
-  function renderMindmap(tree, container, state) {
+  // roots は一番上の題目の一覧。題目どうしは、縦に並べる（線はつながらなくてもよい）。
+  function renderMindmap(roots, container, state) {
+    const list = Array.isArray(roots) ? roots : [roots];
     const entries = [];
-    const root = flatten(tree, '0', 0, null, state, entries);
+    const tops = list.map((tree, i) => flatten(tree, String(i), 0, null, state, entries));
 
     // 1. 置いて測る（測るには DOM に入っている必要がある）。
     const stage = el('div', 'mm'); // 拡大後の大きさを持つ（スクロールのため）
@@ -219,8 +252,12 @@
     for (let d = 1; d < colW.length; d++) colX[d] = colX[d - 1] + colW[d - 1] + GAP_X;
 
     // 3. 縦の位置。
-    measure(root);
-    place(root, PAD, colX);
+    let cursor = PAD;
+    for (const top of tops) {
+      measure(top);
+      place(top, cursor, colX);
+      cursor += top.block + GAP_TOPIC;
+    }
 
     // 4. 反映。位置を決め、線を引く。
     for (const entry of entries) {

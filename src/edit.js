@@ -110,9 +110,14 @@
     let at;
     let raws;
     if (node.line === undefined) {
-      // ファイル名のルート: 末尾に見出しとして足す（末尾の改行は残す）。
+      // ファイル名の題目: 中の内容の後ろに見出しとして足す（ファイルの末尾なら、末尾の改行は残す）。
       if (endsInCodeBlock(s.lines)) return { error: 'The file ends inside a code block. Close it first.' };
-      at = s.lines[s.lines.length - 1] === '' ? s.lines.length - 1 : s.lines.length;
+      const last = s.lines.length - 1;
+      if (node.endLine >= last) {
+        at = s.lines[last] === '' ? last : s.lines.length;
+      } else {
+        at = node.endLine + 1;
+      }
       raws = cleaned.map((c) => `## ${c.label}`);
     } else {
       if (!isCurrent(s.lines, node)) return { error: STALE };
@@ -127,8 +132,11 @@
         raws = cleaned.map((c) => (prefix ? `${prefix} ${c.label}` : `- ${c.label}`));
       }
     }
+    // 見出しを足すときは、前の行が空行でなければ、空行で区切る。
+    const needsBlank = raws[0].startsWith('#') && at > 0 && s.lines[at - 1].trim() !== '';
+    if (needsBlank) raws.unshift('');
     spliceLines(s, at, 0, raws);
-    return { text: joinText(s), line: at };
+    return { text: joinText(s), line: at + (needsBlank ? 1 : 0) };
   }
 
   // 子を 1 件足す。
@@ -136,52 +144,19 @@
     return addChildren(text, node, [label]);
   }
 
-  // 親を足す。新しい親を、選んだノードの位置に入れ、元のノードとその子孫を親の下へ移す。
-  // 移すときは、深さ（見出しの # の数、箇条書きのインデント）を 1 段下げる。
-  function addParent(text, node, label) {
+  // 一番上の題目を、ファイルの末尾に足す（# 見出し）。前の行が空行でなければ、空行で区切る。
+  // 中心の子にはならず、並んだ別の題目になる。
+  function addTopic(text, label) {
     const clean = cleanLabel(label);
     if (clean.error) return clean;
-    if (node.line === undefined || node.kind === 'root') {
-      return { error: 'The root has no parent' };
-    }
     const s = splitText(text);
-    if (!isCurrent(s.lines, node)) return { error: STALE };
-    const block = s.lines.slice(node.line, node.endLine + 1);
-    let moved;
-    let parentRaw;
-    if (node.kind === 'item') {
-      // 箇条書きは、ブロック全体を 2 スペース下げる。
-      parentRaw = `${' '.repeat(indentOf(node.raw))}- ${clean.label}`;
-      moved = block.map((l) => (l.trim() === '' ? l : `  ${l}`));
-    } else {
-      // 見出しは、ブロック内のすべての見出しを 1 段下げる（6 段を超えるときは止める）。
-      let fence = null;
-      moved = [];
-      for (const l of block) {
-        const fenceMatch = /^\s*(```|~~~)/.exec(l);
-        if (fence) {
-          if (fenceMatch && fenceMatch[1] === fence) fence = null;
-          moved.push(l);
-          continue;
-        }
-        if (fenceMatch) {
-          fence = fenceMatch[1];
-          moved.push(l);
-          continue;
-        }
-        const h = /^(#{1,6})(\s+.*)$/.exec(l);
-        if (h) {
-          if (h[1].length >= 6) return { error: 'Too deep to add a parent here' };
-          moved.push(`#${h[1]}${h[2]}`);
-        } else {
-          moved.push(l);
-        }
-      }
-      parentRaw = `${'#'.repeat(node.level)} ${clean.label}`;
-    }
-    const endings = s.crlf.slice(node.line, node.line + block.length);
-    spliceLines(s, node.line, block.length, [parentRaw, ...moved], [s.dominant, ...endings]);
-    return { text: joinText(s), line: node.line };
+    if (endsInCodeBlock(s.lines)) return { error: 'The file ends inside a code block. Close it first.' };
+    const last = s.lines.length - 1;
+    const at = s.lines[last] === '' ? last : s.lines.length;
+    const needsBlank = at > 0 && s.lines[at - 1].trim() !== '';
+    const raws = needsBlank ? ['', `# ${clean.label}`] : [`# ${clean.label}`];
+    spliceLines(s, at, 0, raws);
+    return { text: joinText(s), line: at + raws.length - 1 };
   }
 
   // ノードのコメントを置き換える。コメントは、ノードの直下にある「> 」の行。空にすると消す。
@@ -202,7 +177,7 @@
     setColor,
     addChild,
     addChildren,
-    addParent,
+    addTopic,
     setComment,
     STALE_MESSAGE: STALE,
   });

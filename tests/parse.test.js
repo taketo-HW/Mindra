@@ -61,11 +61,12 @@ test('# 見出しが無ければ、ファイル名がルートになる', () => 
   assert.deepEqual(shape(root).children.map((c) => c.text), ['A']);
 });
 
-test('2 つ目の # 見出しはルートの子になり、順序は文書どおり', () => {
-  const { root } = parse('## 先頭\n# 一つ目\n## 子\n# 二つ目\n- x\n', 'f');
-  assert.equal(root.text, '一つ目');
-  assert.deepEqual(shape(root).children.map((c) => c.text), ['先頭', '子', '二つ目']);
-  assert.deepEqual(shape(root.children[2]).children.map((c) => c.text), ['x']);
+test('# 見出しは、どれも別の一番上の題目になる。最初の # より前の内容は、ファイル名の題目にまとめる', () => {
+  const { roots } = parse('## 先頭\n# 一つ目\n## 子\n# 二つ目\n- x\n', 'f');
+  assert.deepEqual(roots.map((r) => r.text), ['f', '一つ目', '二つ目']);
+  assert.deepEqual(shape(roots[0]).children.map((c) => c.text), ['先頭']);
+  assert.deepEqual(shape(roots[1]).children.map((c) => c.text), ['子']);
+  assert.deepEqual(shape(roots[2]).children.map((c) => c.text), ['x']);
 });
 
 test('段落・表・引用は無視される', () => {

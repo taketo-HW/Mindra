@@ -6,7 +6,7 @@
   const M = global.Mindra;
   const $ = (id) => document.getElementById(id);
   const DEFAULT_LABEL = 'New item';
-  const DEFAULT_PARENT_LABEL = 'New parent';
+  const DEFAULT_TOPIC_LABEL = 'untitled';
   // 項目の色: 7 色のパステル。既定の色で、設定から変えられる（MD には #rrggbb で書く）。
   const PALETTE_NAMES = ['Red', 'Orange', 'Yellow', 'Green', 'Blue', 'Purple', 'Gray'];
   const DEFAULT_PALETTE = ['#ffb3ba', '#ffd3a5', '#fff1a8', '#c4f0c2', '#b5d8f7', '#d7c4f2', '#dcdfe4'];
@@ -14,7 +14,7 @@
   const LINE_DEFAULT = '#8a96a3';
 
   const state = {
-    tree: null,
+    roots: null, // 一番上の題目の一覧
     collapsed: new Set(),
     zoom: 1,
     watcher: null,
@@ -22,6 +22,7 @@
     open: false, // ファイルを開いているか
     selected: null, // 選んでいるノードの id
     editing: null, // 名前を編集中のノードの id
+    menu: null, // ＊のメニューを開いているノードの id
     commenting: null, // コメントを編集中のノードの id
     editingNode: null, // 編集中のノードの行番号と中身（id が指す先が変わっても追えるように）
   };
@@ -56,7 +57,7 @@
   // 名前の編集を始める。編集中のノードは、パス（"0.1.2"）ではなく、行番号と中身で覚える。
   // パスは、外から行が増えると別のノードを指してしまうため。
   function beginEdit(id) {
-    const node = id && M.nodeAt(state.tree, id);
+    const node = id && M.nodeAt(state.roots, id);
     state.commenting = null;
     state.editing = node ? id : null;
     state.editingNode = node ? { line: node.line, raw: node.raw } : null;
@@ -64,22 +65,33 @@
 
   // コメントの編集を始める。名前の編集と同じく、ノードの行番号と中身で覚える。
   function beginComment(id) {
-    const node = id && M.nodeAt(state.tree, id);
+    const node = id && M.nodeAt(state.roots, id);
     state.editing = null;
     state.commenting = node ? id : null;
     state.editingNode = node ? { line: node.line, raw: node.raw } : null;
   }
 
   function draw() {
-    if (!state.tree) return;
-    M.renderMindmap(state.tree, $('view'), {
+    if (!state.roots) return;
+    M.renderMindmap(state.roots, $('view'), {
       collapsed: state.collapsed,
       selected: state.selected,
       editing: state.editing,
       commenting: state.commenting,
+      menu: state.menu,
+      palette: settings.palette,
+      onMenu(id) {
+        state.menu = state.menu === id ? null : id;
+        draw();
+      },
+      onColor(id, color) {
+        state.menu = null;
+        setNodeColor(color, id);
+      },
       zoom: state.zoom,
       onSelect(id) {
         state.selected = id;
+        state.menu = null;
         state.editing = null;
         state.commenting = null;
         draw();
@@ -97,6 +109,7 @@
       onRename: rename,
       onComment(id) {
         state.selected = id;
+        state.menu = null;
         beginComment(id);
         draw();
       },
@@ -113,7 +126,7 @@
 
   // ファイルを開いていないときは、ファイルに対する操作を使えないようにする。
   // 「Settings」「New」「Open MD file」は、いつでも使える。
-  const FILE_CONTROLS = ['add-child', 'add-parent', 'add-many', 'rename', 'zoom-in', 'zoom-out'];
+  const FILE_CONTROLS = ['add-child', 'add-topic', 'rename', 'zoom-in', 'zoom-out'];
   function setFileControls(enabled) {
     state.open = enabled;
     for (const id of FILE_CONTROLS) $(id).disabled = !enabled;
@@ -122,15 +135,14 @@
 
   // 項目の色の見本。項目を選んでいるときだけ使える。
   function updateSwatches() {
-    const node = state.selected && state.tree && M.nodeAt(state.tree, state.selected);
+    const node = state.selected && state.roots && M.nodeAt(state.roots, state.selected);
     const usable = Boolean(state.open && node && node.line !== undefined);
     for (const button of document.querySelectorAll('.swatch')) button.disabled = !usable;
   }
 
-  // 選んだ項目の色を変える（null なら色を消す）。
-  async function setNodeColor(color) {
-    const id = state.selected;
-    const node = id && M.nodeAt(state.tree, id);
+  // 項目の色を変える（null なら色を消す）。id を省けば、選んでいる項目。
+  async function setNodeColor(color, id = state.selected) {
+    const node = id && M.nodeAt(state.roots, id);
     if (!node) {
       setStatus('Select a node first');
       return;
@@ -273,15 +285,15 @@
 
   function onText(text, fileName) {
     const name = fileName.replace(/\.md$/i, '');
-    const { warning, root } = M.parseMarkdown(text, name);
-    state.tree = root;
-    if (!state.selected || !M.nodeAt(root, state.selected)) state.selected = '0';
+    const { warning, roots } = M.parseMarkdown(text, name);
+    state.roots = roots;
+    if (!state.selected || !M.nodeAt(roots, state.selected)) state.selected = '0';
     // 編集中に外から書き換わった場合: 同じノードを追えたら編集を続け、追えなければ取り消す。
     let notice = null;
     if (state.editing || state.commenting) {
       const key = state.editingNode;
-      const id = key && key.line !== undefined ? M.findPathByLine(root, key.line) : null;
-      const node = id && M.nodeAt(root, id);
+      const id = key && key.line !== undefined ? M.findPathByLine(roots, key.line) : null;
+      const node = id && M.nodeAt(roots, id);
       if (node && node.raw === key.raw) {
         if (state.editing) state.editing = id;
         if (state.commenting) state.commenting = id;
@@ -371,7 +383,7 @@
   async function saveComment(id, value) {
     if (state.commenting !== id) return;
     state.commenting = null;
-    const node = M.nodeAt(state.tree, id);
+    const node = M.nodeAt(state.roots, id);
     const before = node && (node.comment || []).join('\n');
     if (!node || value.replace(/\s+$/, '') === before) {
       draw();
@@ -385,7 +397,7 @@
     // 編集がすでに取り消されていれば（外からの変更で止めた後など）、古いパスで書き換えない。
     if (state.editing !== id) return;
     state.editing = null;
-    const node = M.nodeAt(state.tree, id);
+    const node = M.nodeAt(state.roots, id);
     // 変えていなければ書かない（マークダウン記号を消さないため）。
     if (!node || label.trim() === node.text) {
       redraw();
@@ -397,7 +409,7 @@
 
   // 指定したノードに子を足す。足した子の名前を、すぐ編集できる状態にする。
   async function addChild(id) {
-    const node = id && M.nodeAt(state.tree, id);
+    const node = id && M.nodeAt(state.roots, id);
     if (!node) {
       setStatus('Select a node first');
       return;
@@ -406,7 +418,7 @@
     const result = await commit((text) => M.addChild(text, node, DEFAULT_LABEL));
     if (result) {
       // 足した子が見えるように、その祖先（畳まれている所）をすべて開く。
-      const newId = M.findPathByLine(state.tree, result.line);
+      const newId = M.findPathByLine(state.roots, result.line);
       if (newId) {
         const parts = newId.split('.');
         for (let i = 1; i < parts.length; i++) state.collapsed.delete(parts.slice(0, i).join('.'));
@@ -417,48 +429,16 @@
     redraw();
   }
 
-  // 選んだノードの上に親を足す。親の名前を、すぐ編集できる状態にする。
-  async function addParent(id) {
-    const node = id && M.nodeAt(state.tree, id);
-    if (!node) {
-      setStatus('Select a node first');
-      return;
-    }
+  // 「Add topic」: 一番上の題目を、ファイルの末尾に足す（既定の名前は untitled）。選択には依存しない。
+  async function addTopic() {
     state.editing = null;
-    const result = await commit((text) => M.addParent(text, node, DEFAULT_PARENT_LABEL));
+    const result = await commit((text) => M.addTopic(text, DEFAULT_TOPIC_LABEL));
     if (result) {
-      const newId = M.findPathByLine(state.tree, result.line);
+      const newId = M.findPathByLine(state.roots, result.line);
       if (newId) {
         state.selected = newId;
         beginEdit(newId);
       }
-    }
-    redraw();
-  }
-
-  // 複数の子をまとめて足す。入力欄は、1 行に 1 件。
-  function openMultiAdd() {
-    if (!state.selected) {
-      setStatus('Select a node first');
-      return;
-    }
-    $('multi-dialog').showModal();
-    $('multi-text').focus();
-  }
-
-  async function confirmMultiAdd() {
-    const id = state.selected;
-    const node = id && M.nodeAt(state.tree, id);
-    const labels = $('multi-text').value.split('\n').map((l) => l.trim()).filter(Boolean);
-    $('multi-dialog').close();
-    if (!node || !labels.length) return;
-    state.editing = null;
-    const result = await commit((text) => M.addChildren(text, node, labels));
-    if (result) {
-      state.collapsed.delete(id);
-      $('multi-text').value = '';
-      const newId = M.findPathByLine(state.tree, result.line);
-      if (newId) state.selected = newId;
     }
     redraw();
   }
@@ -505,13 +485,7 @@
     $('new-confirm').addEventListener('click', onNewConfirm);
     $('new-cancel').addEventListener('click', () => $('new-dialog').close());
     $('add-child').addEventListener('click', () => addChild(state.selected));
-    $('add-parent').addEventListener('click', () => addParent(state.selected));
-    $('add-many').addEventListener('click', openMultiAdd);
-    $('multi-confirm').addEventListener('click', (event) => {
-      event.preventDefault();
-      confirmMultiAdd();
-    });
-    $('multi-cancel').addEventListener('click', () => $('multi-dialog').close());
+    $('add-topic').addEventListener('click', addTopic);
     $('rename').addEventListener('click', startRename);
     settings = loadSettings();
     buildPaletteInputs();

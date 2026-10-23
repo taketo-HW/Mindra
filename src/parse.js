@@ -128,52 +128,50 @@
     };
     doc.children.forEach(finish);
 
-    // ルート: 最初の # 見出し。無ければファイル名。
-    const first = doc.children.findIndex((n) => n.kind === 'heading' && n.level === 1);
-    if (first === -1) {
-      const root = {
-        text: fileName,
-        kind: 'root',
-        children: doc.children,
-        endLine: lines.length - 1,
-      };
-      return { view: fm.view || 'mindmap', warning, root };
+    // 一番上の題目: # 見出しは、どれも別の一番上の題目になる（中心の子にはしない）。
+    // 最初の # より前の内容は、ファイル名の題目にまとめる。# が 1 つもなければ、ファイル名の題目だけになる。
+    const roots = [];
+    const pre = [];
+    for (const n of doc.children) {
+      if (n.kind === 'heading' && n.level === 1) {
+        n.kind = 'root';
+        roots.push(n);
+      } else if (roots.length) {
+        roots[roots.length - 1].children.push(n);
+      } else {
+        pre.push(n);
+      }
     }
-    // ルートより前の要素と、2 つ目以降の # 見出しはルートの子になる。
-    // 最初の # の子は、その位置に入れる（文書の順序を保つ）。
-    const top = doc.children[first];
-    const root = {
-      text: top.text,
-      kind: 'root',
-      line: top.line,
-      raw: top.raw,
-      color: top.color,
-      comment: top.comment,
-      commentEnd: top.commentEnd,
-      endLine: top.endLine,
-      children: [
-        ...doc.children.slice(0, first),
-        ...top.children,
-        ...doc.children.slice(first + 1),
-      ],
-    };
-    return { view: fm.view || 'mindmap', warning, root };
+    if (pre.length || roots.length === 0) {
+      const end = pre.length ? Math.max(...pre.map((n) => n.endLine)) : lines.length - 1;
+      roots.unshift({ text: fileName, kind: 'root', children: pre, endLine: end });
+    }
+    return { view: fm.view || 'mindmap', warning, roots, root: roots[0] };
   }
 
-  // 画面上の id（"0.1.2" 形式。ルートが "0"）からノードを探す。
-  function nodeAt(tree, id) {
-    let node = tree;
-    for (const part of id.split('.').slice(1)) {
-      node = node && node.children[Number(part)];
-    }
+  // 画面上の id（"0.1.2" 形式。先頭は一番上の題目の番号）からノードを探す。
+  // roots は一番上の題目の一覧（1 つだけなら、その題目を渡してもよい）。
+  function nodeAt(roots, id) {
+    const list = Array.isArray(roots) ? roots : [roots];
+    const [first, ...rest] = id.split('.');
+    let node = list[Number(first)];
+    for (const part of rest) node = node && node.children[Number(part)];
     return node;
   }
 
   // 元の行番号から、そのノードの id を探す。見つからなければ null。
-  function findPathByLine(tree, line, path = '0') {
-    if (tree.line === line) return path;
-    for (let i = 0; i < tree.children.length; i++) {
-      const found = findPathByLine(tree.children[i], line, `${path}.${i}`);
+  function findPathByLine(roots, line) {
+    const list = Array.isArray(roots) ? roots : [roots];
+    const find = (node, path) => {
+      if (node.line === line) return path;
+      for (let i = 0; i < node.children.length; i++) {
+        const found = find(node.children[i], `${path}.${i}`);
+        if (found) return found;
+      }
+      return null;
+    };
+    for (let i = 0; i < list.length; i++) {
+      const found = find(list[i], String(i));
       if (found) return found;
     }
     return null;

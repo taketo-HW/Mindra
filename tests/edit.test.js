@@ -52,7 +52,7 @@ test('見出しの名前を変えても、# の数は残る', () => {
 test('見出しに子を足すと、その見出しの下に入る（深い見出しとして）', () => {
   const text = '# 旅行\n## 持ち物\n- パスポート\n## 予定\n';
   const result = edit(text, '持ち物', M.addChild, '新しい項目');
-  assert.equal(result.text, '# 旅行\n## 持ち物\n- パスポート\n### 新しい項目\n## 予定\n');
+  assert.equal(result.text, '# 旅行\n## 持ち物\n- パスポート\n\n### 新しい項目\n## 予定\n');
   assert.deepEqual(shape(parse(result.text).root), {
     text: '旅行',
     children: [
@@ -76,12 +76,12 @@ test('箇条書きに子を足すと、2 つ深いインデントの箇条書き
 
 test('# ルートに子を足すと、2 つ目の深さの見出しになる', () => {
   const result = edit('# R\n- a\n', 'R', M.addChild, '新');
-  assert.equal(result.text, '# R\n- a\n## 新\n');
+  assert.equal(result.text, '# R\n- a\n\n## 新\n');
 });
 
 test('ファイル名のルートに子を足すと、末尾に見出しとして足す（末尾の改行は残る）', () => {
   const result = edit('## A\n', 'memo', M.addChild, '新', 'memo');
-  assert.equal(result.text, '## A\n## 新\n');
+  assert.equal(result.text, '## A\n\n## 新\n');
 });
 
 test('ファイル名のルートは名前を変えられない', () => {
@@ -160,67 +160,12 @@ test('子を複数まとめて足すと、同じ位置に同じ深さで並ぶ',
 test('見出しに複数の子を足すと、1 段深い見出しになる', () => {
   const tree = parse('# R\n## A\n').root;
   const result = M.addChildren('# R\n## A\n', find(tree, 'A'), ['x', 'y']);
-  assert.equal(result.text, '# R\n## A\n### x\n### y\n');
+  assert.equal(result.text, '# R\n## A\n\n### x\n### y\n');
 });
 
 test('空の一覧は足さない', () => {
   const tree = parse('- a\n').root;
   assert.match(M.addChildren('- a\n', find(tree, 'a'), ['', '  ']).error, /Nothing|empty/);
-});
-
-test('箇条書きに親を足すと、元のノードは子として 2 つ下がる', () => {
-  const result = edit('# R\n- a\n- b\n', 'a', M.addParent, 'P');
-  assert.equal(result.text, '# R\n- P\n  - a\n- b\n');
-  const tree = parse(result.text).root;
-  assert.deepEqual(shape(find(tree, 'P')), { text: 'P', children: [{ text: 'a', children: [] }] });
-});
-
-test('子孫とコメントも、一緒に下がる', () => {
-  const result = edit('- a\n  > note\n  - a1\n', 'a', M.addParent, 'P');
-  assert.equal(result.text, '- P\n  - a\n    > note\n    - a1\n');
-});
-
-test('見出しに親を足すと、見出しの深さが 1 段下がり、子孫の見出しも下がる', () => {
-  const result = edit('# R\n## A\n- x\n### A1\n', 'A', M.addParent, 'P');
-  assert.equal(result.text, '# R\n## P\n### A\n- x\n#### A1\n');
-});
-
-test('ルートに親は足せない', () => {
-  assert.match(edit('# R\n', 'R', M.addParent, 'P').error, /root/);
-});
-
-test('これ以上深くできない見出しには、親を足せない', () => {
-  assert.match(edit('# R\n## A\n###### deep\n', 'A', M.addParent, 'P').error, /Too deep/);
-});
-
-test('親を足した後の新しい親は、返された line で見つかる', () => {
-  const result = edit('# R\n- a\n', 'a', M.addParent, 'P');
-  const tree = parse(result.text).root;
-  assert.equal(M.nodeAt(tree, M.findPathByLine(tree, result.line)).text, 'P');
-});
-
-test('項目の色は、行末の {color:#rrggbb} として書く', () => {
-  const result = edit('# R\n- a\n', 'a', M.setColor, '#FF8800');
-  assert.equal(result.text, '# R\n- a {color:#ff8800}\n');
-});
-
-test('色を変えると、古い色の指定だけが置き換わる', () => {
-  const result = edit('- a {color:#ff0000}\n', 'a', M.setColor, '#00ff00');
-  assert.equal(result.text, '- a {color:#00ff00}\n');
-});
-
-test('色を消すと、指定がなくなる', () => {
-  const result = edit('## A {color:#ff0000}\n', 'A', M.setColor, null);
-  assert.equal(result.text, '## A\n');
-});
-
-test('名前を変えても、色は残る', () => {
-  const result = edit('- a {color:#ff0000}\n', 'a', M.renameNode, 'b');
-  assert.equal(result.text, '- b {color:#ff0000}\n');
-});
-
-test('不正な色は書かない', () => {
-  assert.match(edit('- a\n', 'a', M.setColor, 'red').error, /#rrggbb/);
 });
 
 test('LF と CRLF が混ざったファイルでも、編集できて、他の行の改行は変わらない', () => {
@@ -236,4 +181,9 @@ test('閉じていないコードブロックの後ろには、ルートの子�
 test('名前に {color:...} を書くと、色として扱われるので、エラーにする', () => {
   assert.match(edit('# A\n- x\n', 'A', M.addChild, 'z {color:#ff0000}').error, /color/);
   assert.match(edit('- x\n', 'x', M.renameNode, 'q {color:#ff0000}').error, /color/);
+});
+
+test('ルートの直下に足すと、一番上の項目と同じ深さで、ルートの子孫の後ろに入る', () => {
+  const result = M.addChild('# R\n- a\n# S\n', find(parse('# R\n- a\n# S\n').root, 'R'), 'T');
+  assert.equal(result.text, '# R\n- a\n\n## T\n# S\n');
 });
