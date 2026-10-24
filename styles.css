@@ -249,11 +249,116 @@ dialog {
   color: var(--muted);
 }
 
+.body-row {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+}
+
 .view {
   flex: 1;
+  min-width: 0;
   min-height: 0;
   overflow: auto;
   padding: 24px;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+/* AI チャット: 右側に、幅の 1/5・高さは全体 */
+.chat {
+  width: 20%;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid var(--border);
+  background: var(--panel);
+}
+
+.chat-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid var(--border);
+}
+
+.chat-ai {
+  display: flex;
+  gap: 4px;
+}
+
+.chat-ai-btn,
+#chat-close {
+  padding: 3px 8px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--fg);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.chat-ai-btn.is-on {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.chat-log {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px;
+}
+
+.chat-msg {
+  margin: 0 0 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: pre-wrap;
+}
+
+.chat-user {
+  background: var(--root-bg);
+}
+
+.chat-note {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.chat-form {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--border);
+}
+
+.chat-form textarea {
+  resize: vertical;
+  font: inherit;
+  font-size: 14px;
+  padding: 6px;
+  border: 1px solid var(--control-border);
+  border-radius: 4px;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.chat-form button {
+  align-self: flex-end;
+  padding: 4px 14px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--accent);
+  cursor: pointer;
 }
 
 /* マインドマップ: 根を左に置き、枝を右へ伸ばす。線は SVG で引く。 */
@@ -500,4 +605,44 @@ dialog {
 /* ＊のメニューを開いたノードは、一番手前に出す（後ろのノードや線に隠れない） */
 .mm-node:has(.mm-menu) {
   z-index: 30;
+}
+
+/* ＊のメニュー: 使えないときは薄く */
+.mm-menu-comment:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* チャットに添えた行（ファイル名・行番号・項目） */
+.chat-focus {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--root-bg);
+  font-size: 12px;
+}
+
+.chat-focus button {
+  border: none;
+  background: none;
+  color: var(--muted);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+/* AI の答えに付く「ファイルに反映」 */
+.chat-apply {
+  display: block;
+  margin-top: 6px;
+  padding: 3px 10px;
+  border: 1px solid var(--accent);
+  border-radius: 4px;
+  background: var(--panel);
+  color: var(--accent);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
 }

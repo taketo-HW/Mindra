@@ -4,6 +4,10 @@
   "description": "AI と人間が同じ Markdown を共有する、サーバーレスのマインドマップビューア",
   "type": "module",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "bridge": "node tools/ai-bridge.mjs"
+  },
+  "bin": {
+    "mindmap": "tools/mindmap.mjs"
   }
 }

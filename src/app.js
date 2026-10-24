@@ -15,6 +15,9 @@
 
   const state = {
     roots: null, // 一番上の題目の一覧
+    text: '', // 今開いているファイルの内容（AI に渡す）
+    fileName: '', // 今開いているファイルの名前
+    dir: null, // 作業フォルダ（mindmap を打った場所）。新しい図はここに保存する
     collapsed: new Set(),
     zoom: 1,
     watcher: null,
@@ -107,6 +110,11 @@
         draw();
       },
       onRename: rename,
+      chatOpen: chatOpen(),
+      onAddAI(id) {
+        state.menu = null;
+        attachAI(id);
+      },
       onComment(id) {
         state.selected = id;
         state.menu = null;
@@ -287,6 +295,8 @@
     const name = fileName.replace(/\.md$/i, '');
     const { warning, roots } = M.parseMarkdown(text, name);
     state.roots = roots;
+    state.text = text;
+    state.fileName = fileName;
     if (!state.selected || !M.nodeAt(roots, state.selected)) state.selected = '0';
     // 編集中に外から書き換わった場合: 同じノードを追えたら編集を続け、追えなければ取り消す。
     let notice = null;
@@ -330,6 +340,8 @@
     state.selected = null;
     state.editing = null;
     state.commenting = null;
+    chat.focus = null; // 前のファイルの行は、添えない
+    renderChatFocus();
   }
 
   function onOpen() {
@@ -443,6 +455,180 @@
     redraw();
   }
 
+  // AI チャット（右側のパネル）。AI へは、補助プログラム（tools/ai-bridge.mjs、npm run bridge）経由で話す。
+  const CHAT_NAMES = { claude: 'Claude', codex: 'Codex', ollama: 'Ollama' };
+  const BRIDGE_URL = 'http://127.0.0.1:7777';
+  const chat = { ai: 'claude', focus: null }; // focus: チャットに添えた行
+
+  function chatOpen() {
+    return !$('chat-panel').hidden;
+  }
+
+  function toggleChat() {
+    $('chat-panel').hidden = !$('chat-panel').hidden;
+    redraw();
+  }
+
+  function setChatAI(ai) {
+    chat.ai = ai;
+    for (const button of document.querySelectorAll('.chat-ai-btn')) {
+      button.classList.toggle('is-on', button.dataset.ai === ai);
+    }
+  }
+
+  function appendChat(role, text) {
+    const message = document.createElement('p');
+    message.className = `chat-msg chat-${role}`;
+    message.textContent = text;
+    $('chat-log').appendChild(message);
+    message.scrollIntoView({ block: 'end' });
+    return message;
+  }
+
+  function renderChatFocus() {
+    const box = $('chat-focus');
+    box.hidden = !chat.focus;
+    if (chat.focus) {
+      const where = chat.focus.line ? `${chat.focus.file}, line ${chat.focus.line}` : chat.focus.file;
+      box.querySelector('span').textContent = `${where} · ${chat.focus.text}`;
+    }
+  }
+
+  // AI に送って、答えを表示する。添えた行があれば、それも一緒に送る。
+  async function askAI(text) {
+    const ai = chat.ai;
+    const reply = appendChat('note', `${CHAT_NAMES[ai]} is thinking…`);
+    const f = chat.focus;
+    const focus = f ? `${f.file}${f.line ? `, line ${f.line}` : ''} ("${f.text}"): ${f.raw}` : '';
+    try {
+      const res = await fetch(`${BRIDGE_URL}/chat`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ai, message: text, context: state.text || '', focus }),
+      });
+      const data = await res.json();
+      reply.className = 'chat-msg chat-ai';
+      reply.textContent = res.ok ? data.reply : `Error: ${data.error}`;
+      const proposed = res.ok ? extractMarkdown(data.reply) : null;
+      if (proposed) {
+        addApplyButton(reply, proposed);
+        addSaveButton(reply, proposed);
+      }
+    } catch (err) {
+      reply.textContent = 'Could not reach the AI bridge. Start it in a terminal with: npm run bridge';
+    }
+    reply.scrollIntoView({ block: 'end' });
+  }
+
+  async function sendChat(event) {
+    event.preventDefault();
+    const text = $('chat-input').value.trim();
+    if (!text) return;
+    $('chat-input').value = '';
+    appendChat('user', text);
+    await askAI(text);
+  }
+
+  // ＊の「Add chat」: その行をチャットに添えて、入力欄で人間が続けて打てるようにする（AI には送らない）。
+  function attachAI(id) {
+    const node = M.nodeAt(state.roots, id);
+    if (!node || !chatOpen()) return;
+    chat.focus = {
+      file: state.fileName,
+      line: node.line === undefined ? null : node.line + 1,
+      text: node.text,
+      raw: node.raw || node.text,
+    };
+    renderChatFocus();
+    const input = $('chat-input');
+    input.value = `${input.value.trimEnd()}\n`; // 1 つ改行を入れて、人間がそこから打てるように
+    input.focus();
+    input.setSelectionRange(input.value.length, input.value.length);
+    redraw();
+  }
+
+  // AI の答えの中から、ファイル全体の新しい内容（```markdown のブロック）を取り出す。
+  function extractMarkdown(reply) {
+    const m = /```markdown\n([\s\S]*?)\n```/.exec(reply || '');
+    return m ? m[1] : null;
+  }
+
+  // 答えに付ける「ファイルに反映」。押したときだけ、確認のあとに書き込む。
+  function addApplyButton(reply, markdown) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chat-apply';
+    button.textContent = 'Apply to file';
+    button.title = 'Replace the whole file with this version (asks first)';
+    button.addEventListener('click', async () => {
+      if (!state.watcher) {
+        setStatus('Open a file first');
+        return;
+      }
+      if (!window.confirm('Replace the whole file with this version?')) return;
+      await commit(() => ({ text: markdown, line: 0 }));
+      redraw();
+    });
+    reply.appendChild(button);
+  }
+
+  // 答えの図を、新しいファイルとして保存する（作業フォルダに。フォルダが無ければ選んでもらう）。
+  function addSaveButton(reply, markdown) {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'chat-apply';
+    button.textContent = 'Save as new map';
+    button.title = 'Save this as a new .md file in your working folder';
+    button.addEventListener('click', () => saveAsNewMap(markdown));
+    reply.appendChild(button);
+  }
+
+  async function saveAsNewMap(markdown) {
+    const heading = /^#\s+(.+)$/m.exec(markdown);
+    const title = heading ? heading[1].trim() : 'untitled';
+    if (state.dir) {
+      // 作業フォルダがある: 補助プログラムに保存してもらい、新しいタブで開く。
+      try {
+        const res = await fetch(`${BRIDGE_URL}/new-file`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ dir: state.dir, title, text: markdown }),
+        });
+        const data = await res.json();
+        if (!res.ok) {
+          setStatus(data.error);
+          return;
+        }
+        setStatus(`Saved ${data.path}`);
+        global.open(`${BRIDGE_URL}/?file=${encodeURIComponent(data.path)}&dir=${encodeURIComponent(state.dir)}`, '_blank');
+      } catch (err) {
+        setStatus('Could not reach the AI bridge. Start it with: mindmap');
+      }
+      return;
+    }
+    // 作業フォルダが分からない（ファイル選択で開いた）: フォルダを選んでもらい、そこに保存する。
+    if (typeof global.showDirectoryPicker !== 'function') {
+      setStatus('Choose a folder is not supported here. Open the map with the mindmap command instead.');
+      return;
+    }
+    try {
+      const folder = await global.showDirectoryPicker({ mode: 'readwrite' });
+      const name = `${title.replace(/[\\/:*?"<>|]/g, '_').slice(0, 80) || 'untitled'}.md`;
+      const exists = await folder.getFileHandle(name).then(() => true, () => false);
+      if (exists) {
+        setStatus(`${name} already exists in that folder`);
+        return;
+      }
+      const handle = await folder.getFileHandle(name, { create: true });
+      const writable = await handle.createWritable();
+      await writable.write(markdown);
+      await writable.close();
+      setStatus(`Saved ${name} in the chosen folder. Open it with: mindmap ${name}`);
+    } catch (err) {
+      if (err.name !== 'AbortError') setStatus(`Could not save: ${err.message}`);
+    }
+  }
+
   function startRename() {
     if (!state.selected) {
       setStatus('Select a node first');
@@ -473,6 +659,17 @@
     draw();
   }
 
+  // mindmap コマンドから開いたとき: ?file=<絶対パス> で、そのファイルを開く。?new=1 で、新規作成の画面を開く。
+  function openFromUrl() {
+    const params = new URLSearchParams(global.location.search);
+    state.dir = params.get('dir');
+    if (params.get('file')) {
+      const path = params.get('file');
+      startWatching((onChange, onErr) => M.watchPath(path, onChange, onErr));
+    }
+    if (params.has('new')) onNew();
+  }
+
   function init() {
     if (typeof global.showOpenFilePicker !== 'function') {
       $('open').disabled = true;
@@ -486,6 +683,23 @@
     $('new-cancel').addEventListener('click', () => $('new-dialog').close());
     $('add-child').addEventListener('click', () => addChild(state.selected));
     $('add-topic').addEventListener('click', addTopic);
+    $('chat-toggle').addEventListener('click', toggleChat);
+    $('chat-close').addEventListener('click', toggleChat);
+    for (const button of document.querySelectorAll('.chat-ai-btn')) {
+      button.addEventListener('click', () => setChatAI(button.dataset.ai));
+    }
+    $('chat-form').addEventListener('submit', sendChat);
+    $('chat-focus-clear').addEventListener('click', () => {
+      chat.focus = null;
+      renderChatFocus();
+      redraw();
+    });
+    $('chat-input').addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' && !event.shiftKey && !event.isComposing) {
+        event.preventDefault();
+        sendChat(event);
+      }
+    });
     $('rename').addEventListener('click', startRename);
     settings = loadSettings();
     buildPaletteInputs();
@@ -508,4 +722,5 @@
   }
 
   init();
+  openFromUrl(); // 最後に（画面の準備が済んでから）
 })(globalThis);

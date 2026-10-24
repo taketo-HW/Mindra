@@ -14,11 +14,33 @@
     <button id="add-topic" type="button" title="Add a new top-level topic (same level as the top topics)">Add topic</button>
     <button id="rename" type="button" title="Rename the selected node (Enter, or double-click)">Rename</button>
     <button id="settings" type="button" title="Theme, colors, and font">Settings</button>
+    <button id="chat-toggle" type="button" title="Show or hide the AI chat on the right">AI chat</button>
     <button id="zoom-out" type="button" aria-label="Zoom out">−</button>
     <button id="zoom-in" type="button" aria-label="Zoom in">＋</button>
     <span id="status" class="status">Open a file to begin</span>
   </header>
-  <main id="view" class="view"></main>
+  <div class="body-row">
+    <main id="view" class="view"></main>
+    <aside id="chat-panel" class="chat" aria-label="AI chat" hidden>
+      <div class="chat-head">
+        <div class="chat-ai" role="tablist">
+          <button type="button" class="chat-ai-btn is-on" data-ai="claude">Claude</button>
+          <button type="button" class="chat-ai-btn" data-ai="codex">Codex</button>
+          <button type="button" class="chat-ai-btn" data-ai="ollama">Ollama</button>
+        </div>
+        <button id="chat-close" type="button" aria-label="Close AI chat">×</button>
+      </div>
+      <div id="chat-focus" class="chat-focus" hidden>
+        <span></span>
+        <button id="chat-focus-clear" type="button" aria-label="Detach this line">×</button>
+      </div>
+      <div id="chat-log" class="chat-log"></div>
+      <form id="chat-form" class="chat-form">
+        <textarea id="chat-input" rows="3" placeholder="Ask the AI about this map (Enter to send, Shift+Enter for a new line)"></textarea>
+        <button type="submit">Send</button>
+      </form>
+    </aside>
+  </div>
 
   <dialog id="new-dialog">
     <form method="dialog">

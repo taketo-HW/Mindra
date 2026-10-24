@@ -87,6 +87,12 @@
     note.type = 'button';
     note.addEventListener('click', () => state.onComment(entry.id));
     menu.appendChild(note);
+    const ai = el('button', 'mm-menu-comment', 'Add chat');
+    ai.type = 'button';
+    ai.disabled = !state.chatOpen;
+    ai.title = state.chatOpen ? 'Attach this line to the AI chat' : 'Open the AI chat first';
+    ai.addEventListener('click', () => state.onAddAI(entry.id));
+    menu.appendChild(ai);
     const swatches = el('div', 'mm-menu-colors');
     const none = el('button', 'swatch swatch-none', '×');
     none.type = 'button';
