@@ -28,6 +28,11 @@ const PAGE_FILES = {
   '/styles.css': ['styles.css', 'text/css; charset=utf-8'],
   '/src/parse.js': ['src/parse.js', 'text/javascript; charset=utf-8'],
   '/src/render.js': ['src/render.js', 'text/javascript; charset=utf-8'],
+  '/src/view-kit.js': ['src/view-kit.js', 'text/javascript; charset=utf-8'],
+  '/src/view-flowchart.js': ['src/view-flowchart.js', 'text/javascript; charset=utf-8'],
+  '/src/view-table.js': ['src/view-table.js', 'text/javascript; charset=utf-8'],
+  '/src/view-sequence.js': ['src/view-sequence.js', 'text/javascript; charset=utf-8'],
+  '/src/view-timeline.js': ['src/view-timeline.js', 'text/javascript; charset=utf-8'],
   '/src/watch.js': ['src/watch.js', 'text/javascript; charset=utf-8'],
   '/src/edit.js': ['src/edit.js', 'text/javascript; charset=utf-8'],
   '/src/app.js': ['src/app.js', 'text/javascript; charset=utf-8'],
@@ -169,6 +174,13 @@ const server = http.createServer(async (req, res) => {
     if (req.method === 'OPTIONS') return send(204, {}, '');
     if (req.method === 'GET' && url.pathname === '/favicon.ico') return send(204, {}, '');
     if (req.method === 'GET' && url.pathname === '/health') return send(200, { 'Content-Type': 'text/plain' }, 'ok');
+
+    // 描画の部品（src/<名前>.js）。名前は英小文字・数字・ハイフンだけ。作業フォルダの src の中だけを配信する。
+    const script = /^\/src\/([a-z0-9-]+)\.js$/.exec(url.pathname);
+    if (req.method === 'GET' && script) {
+      const code = await readFile(join(ROOT, 'src', `${script[1]}.js`)).catch(() => null);
+      if (code) return send(200, { 'Content-Type': 'text/javascript; charset=utf-8' }, code);
+    }
 
     if (req.method === 'GET' && PAGE_FILES[url.pathname]) {
       const [file, type] = PAGE_FILES[url.pathname];

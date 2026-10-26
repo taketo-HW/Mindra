@@ -17,10 +17,14 @@ const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const safeScript = (code) => code.replace(/<\/script/gi, '<\\/script').replace(/<!--/g, '<\\!--');
 
 export async function buildHtml(markdown, title) {
-  const [css, parse, render] = await Promise.all([
+  // 描画の部品（アプリと同じもの）。index.html のスクリプトの一覧から、画面の配線（読み書き・操作）以外を使う。
+  const page = await readFile(join(ROOT, 'index.html'), 'utf8');
+  const SCRIPTS = [...page.matchAll(/<script src="(src\/[a-z0-9-]+\.js)"><\/script>/g)]
+    .map((m) => m[1])
+    .filter((file) => !['src/watch.js', 'src/edit.js', 'src/app.js'].includes(file));
+  const [css, ...scripts] = await Promise.all([
     readFile(join(ROOT, 'styles.css'), 'utf8'),
-    readFile(join(ROOT, 'src/parse.js'), 'utf8'),
-    readFile(join(ROOT, 'src/render.js'), 'utf8'),
+    ...SCRIPTS.map((file) => readFile(join(ROOT, file), 'utf8')),
   ]);
   const data = safeScript(JSON.stringify({ markdown, title }));
   return `<!doctype html>
@@ -46,8 +50,7 @@ body { height: auto; display: block; background: transparent; }
 <body>
 <div class="export-bar"><strong id="title"></strong><button id="fit" type="button" class="is-on">Fit</button><button id="full" type="button">100%</button></div>
 <main id="view" class="view"></main>
-<script>${safeScript(parse)}</script>
-<script>${safeScript(render)}</script>
+${scripts.map((code) => `<script>${safeScript(code)}</script>`).join('\n')}
 <script>
 (function () {
   var data = ${data};
@@ -72,7 +75,11 @@ body { height: auto; display: block; background: transparent; }
   document.documentElement.dataset.theme = isDark() ? 'dark' : 'light';
   document.getElementById('title').textContent = data.title;
 
-  var roots = Mindra.parseMarkdown(data.markdown, data.title).roots;
+  var info = Mindra.parseMarkdown(data.markdown, data.title);
+  var roots = info.roots;
+  // 図の種類（front matter の view）。マインドマップ以外は、その図の描き方を使う。
+  var kind = info.view !== 'mindmap' && Mindra.views[info.view] ? info.view : 'mindmap';
+  var model = kind === 'mindmap' ? null : Mindra.views[kind].parse(data.markdown, data.title);
   var view = document.getElementById('view');
   var collapsed = new Set();
   var fit = true;
@@ -80,7 +87,7 @@ body { height: auto; display: block; background: transparent; }
   var noop = function () {};
 
   function draw() {
-    var stage = Mindra.renderMindmap(roots, view, {
+    var stage = kind !== 'mindmap' ? Mindra.views[kind].render(model, view, { zoom: 1 }) : Mindra.renderMindmap(roots, view, {
       collapsed: collapsed, selected: null, editing: null, commenting: null, menu: null,
       palette: [], chatOpen: false, zoom: 1,
       onSelect: noop, onEdit: noop, onRename: noop, onComment: noop, onSaveComment: noop,

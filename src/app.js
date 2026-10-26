@@ -15,6 +15,8 @@
 
   const state = {
     roots: null, // 一番上の題目の一覧
+    view: 'mindmap', // 図の種類（front matter の view）
+    model: null, // マインドマップ以外の図のデータ
     text: '', // 今開いているファイルの内容（AI に渡す）
     fileName: '', // 今開いているファイルの名前
     dir: null, // 作業フォルダ（mindmap を打った場所）。新しい図はここに保存する
@@ -74,8 +76,17 @@
     state.editingNode = node ? { line: node.line, raw: node.raw } : null;
   }
 
+  // マインドマップ以外の図か（見るだけ。編集は MD を直接書く）。
+  function isOtherView() {
+    return state.view !== 'mindmap';
+  }
+
   function draw() {
     if (!state.roots) return;
+    if (isOtherView()) {
+      M.views[state.view].render(state.model, $('view'), { zoom: state.zoom });
+      return;
+    }
     M.renderMindmap(state.roots, $('view'), {
       collapsed: state.collapsed,
       selected: state.selected,
@@ -138,18 +149,27 @@
   function setFileControls(enabled) {
     state.open = enabled;
     for (const id of FILE_CONTROLS) $(id).disabled = !enabled;
+    updateEditControls();
     updateSwatches();
+  }
+
+  // 編集のボタンは、マインドマップのときだけ使える（ほかの図は、まだ見るだけ）。
+  const EDIT_CONTROLS = ['add-child', 'add-topic', 'rename'];
+  function updateEditControls() {
+    const editable = state.open && !isOtherView();
+    for (const id of EDIT_CONTROLS) $(id).disabled = !editable;
   }
 
   // 項目の色の見本。項目を選んでいるときだけ使える。
   function updateSwatches() {
     const node = state.selected && state.roots && M.nodeAt(state.roots, state.selected);
-    const usable = Boolean(state.open && node && node.line !== undefined);
+    const usable = Boolean(state.open && !isOtherView() && node && node.line !== undefined);
     for (const button of document.querySelectorAll('.swatch')) button.disabled = !usable;
   }
 
   // 項目の色を変える（null なら色を消す）。id を省けば、選んでいる項目。
   async function setNodeColor(color, id = state.selected) {
+    if (isOtherView()) return;
     const node = id && M.nodeAt(state.roots, id);
     if (!node) {
       setStatus('Select a node first');
@@ -293,8 +313,11 @@
 
   function onText(text, fileName) {
     const name = fileName.replace(/\.md$/i, '');
-    const { warning, roots } = M.parseMarkdown(text, name);
+    const { warning, roots, view } = M.parseMarkdown(text, name);
     state.roots = roots;
+    state.view = view !== 'mindmap' && M.views[view] ? view : 'mindmap';
+    state.model = isOtherView() ? M.views[state.view].parse(text, name) : null;
+    updateEditControls();
     state.text = text;
     state.fileName = fileName;
     if (!state.selected || !M.nodeAt(roots, state.selected)) state.selected = '0';
@@ -421,6 +444,7 @@
 
   // 指定したノードに子を足す。足した子の名前を、すぐ編集できる状態にする。
   async function addChild(id) {
+    if (isOtherView()) return;
     const node = id && M.nodeAt(state.roots, id);
     if (!node) {
       setStatus('Select a node first');
@@ -443,6 +467,7 @@
 
   // 「Add topic」: 一番上の題目を、ファイルの末尾に足す（既定の名前は untitled）。選択には依存しない。
   async function addTopic() {
+    if (isOtherView()) return;
     state.editing = null;
     const result = await commit((text) => M.addTopic(text, DEFAULT_TOPIC_LABEL));
     if (result) {
@@ -630,6 +655,7 @@
   }
 
   function startRename() {
+    if (isOtherView()) return;
     if (!state.selected) {
       setStatus('Select a node first');
       return;
@@ -643,7 +669,7 @@
   function onKeyDown(event) {
     const t = event.target;
     const onCanvas = t === document.body || (t.closest && t.closest('#view'));
-    if (!onCanvas || state.editing || state.commenting || !state.selected || t.tagName === 'INPUT') return;
+    if (!onCanvas || isOtherView() || state.editing || state.commenting || !state.selected || t.tagName === 'INPUT') return;
     if (event.key === 'Enter') {
       event.preventDefault();
       startRename();

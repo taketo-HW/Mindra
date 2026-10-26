@@ -646,3 +646,872 @@ dialog {
   font-size: 12px;
   cursor: pointer;
 }
+
+/* ---- マインドマップ以外の図（docs/図の種類.md） ---- */
+.vw-wrap {
+  display: inline-block;
+  padding: 4px 8px 16px;
+}
+
+.vw-title {
+  margin: 0 0 14px;
+  font-size: 18px;
+  color: var(--fg);
+}
+
+.vw-empty {
+  margin: 0;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.vw-area {
+  position: relative;
+}
+
+.vw-lines {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.vw-arrowhead {
+  fill: var(--line);
+}
+
+.vw-edge {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 2;
+}
+
+.vw-edge.is-dashed,
+.vw-edge.is-back {
+  stroke-dasharray: 6 4;
+}
+
+.vw-label-text,
+.vw-seq-probe {
+  font-size: 12px;
+}
+
+.vw-label-text {
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 4px;
+  stroke-linejoin: round;
+}
+
+.vw-seq-probe {
+  position: absolute;
+  visibility: hidden;
+}
+
+/* フローチャート */
+.vw-fc-node {
+  position: absolute;
+  padding: 8px 14px;
+  border: 1px solid var(--node-border);
+  border-radius: 10px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.vw-fc-node.is-decision {
+  z-index: 1;
+  padding: 4px 6px;
+  border: none;
+  background: none;
+}
+
+.vw-fc-diamond {
+  fill: var(--heading-bg);
+  stroke: var(--heading-border);
+  stroke-width: 1.5;
+}
+
+/* シーケンス図 */
+.vw-seq-actor {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--root-border);
+  border-radius: 8px;
+  background: var(--root-bg);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.vw-lifeline {
+  stroke: var(--line);
+  stroke-width: 1.5;
+  stroke-dasharray: 4 4;
+}
+
+/* 表 */
+.vw-table {
+  margin: 0 0 18px;
+  border-collapse: collapse;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.vw-table caption {
+  padding: 0 0 8px;
+  text-align: left;
+  font-weight: bold;
+  color: var(--fg);
+}
+
+.vw-table th,
+.vw-table td {
+  padding: 6px 12px;
+  border: 1px solid var(--node-border);
+}
+
+.vw-table th {
+  background: var(--root-bg);
+}
+
+/* タイムライン: 日付・印・出来事の 3 列。印の列に縦の線を引く */
+.vw-tl {
+  display: grid;
+  grid-template-columns: max-content 24px max-content;
+  column-gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vw-tl-item {
+  display: contents;
+}
+
+.vw-tl-date {
+  padding: 2px 0 18px;
+  text-align: right;
+  font-weight: bold;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.vw-tl-text {
+  padding: 2px 0 18px;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.vw-tl-mark {
+  position: relative;
+}
+
+.vw-tl-mark::before {
+  content: '';
+  position: absolute;
+  left: 11px;
+  top: 0;
+  bottom: 0;
+  border-left: 2px solid var(--line);
+}
+
+.vw-tl-mark::after {
+  content: '';
+  position: absolute;
+  left: 6px;
+  top: 5px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+
+/* ---- やさしい図（カンバン、ロードマップ、チェックリスト、グラフ、SWOT、ロジックツリー） ---- */
+
+/* カンバン */
+.vw-kb {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.vw-kb-col {
+  width: 200px;
+  padding: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.vw-kb-head {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  font-weight: bold;
+  color: var(--fg);
+}
+
+.vw-kb-count {
+  min-width: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  background: var(--root-bg);
+  text-align: center;
+  font-size: 12px;
+}
+
+.vw-kb-card {
+  margin-top: 6px;
+  padding: 8px 10px;
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+}
+
+/* ロードマップ: 矢印の形の見出しを横に並べる */
+.vw-rm {
+  display: flex;
+  align-items: flex-start;
+}
+
+.vw-rm-phase {
+  width: 180px;
+}
+
+.vw-rm-head {
+  padding: 8px 26px 8px 18px;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%, 14px 50%);
+  color: #fff;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.vw-rm-items {
+  margin: 10px 0 0;
+  padding: 0 10px 0 28px;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.vw-rm-items li {
+  margin-bottom: 4px;
+}
+
+/* チェックリスト */
+.vw-ck-progress {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.vw-ck-bar {
+  width: 200px;
+  height: 8px;
+  border-radius: 4px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.vw-ck-fill {
+  height: 100%;
+  background: var(--accent);
+}
+
+.vw-ck-count {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.vw-ck-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-weight: bold;
+  color: var(--fg);
+}
+
+.vw-ck-head .vw-ck-progress {
+  margin: 0;
+}
+
+.vw-ck-head .vw-ck-bar {
+  width: 120px;
+}
+
+.vw-ck-list {
+  margin: 6px 0 16px;
+  padding: 0;
+  list-style: none;
+}
+
+.vw-ck-item {
+  display: flex;
+  gap: 8px;
+  padding: 3px 0;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.vw-ck-item.is-done span:last-child {
+  color: var(--muted);
+  text-decoration: line-through;
+}
+
+.vw-ck-mark {
+  width: 16px;
+  color: var(--accent);
+}
+
+/* 棒グラフ: 名前・棒・数の 3 列 */
+.vw-bar {
+  display: grid;
+  grid-template-columns: max-content max-content max-content;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.vw-bar-label {
+  text-align: right;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+.vw-bar-track {
+  display: block;
+  height: 18px;
+  border-radius: 4px;
+  background: var(--border);
+}
+
+.vw-bar-fill {
+  display: block;
+  height: 100%;
+  border-radius: 4px;
+}
+
+.vw-bar-value {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 円グラフ: 円と凡例 */
+.vw-pie {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.vw-pie-slice {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.vw-pie-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vw-pie-legend li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 0;
+  font-size: 14px;
+  color: var(--fg);
+}
+
+.vw-pie-swatch {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+}
+
+.vw-pie-value {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+/* 折れ線グラフ */
+.vw-line-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.vw-line-path {
+  fill: none;
+  stroke-width: 2.5;
+}
+
+.vw-line-axis {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+.vw-line-value {
+  font-size: 12px;
+  fill: var(--fg);
+}
+
+/* SWOT（4 マス） */
+.vw-sw {
+  display: grid;
+  grid-template-columns: repeat(2, 240px);
+  gap: 12px;
+}
+
+.vw-sw-box {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-top-width: 5px;
+  border-radius: 8px;
+  background: var(--panel);
+}
+
+.vw-sw-head {
+  margin-bottom: 6px;
+  font-weight: bold;
+  color: var(--fg);
+}
+
+.vw-sw-items {
+  margin: 0;
+  padding-left: 18px;
+  color: var(--fg);
+  font-size: 14px;
+}
+
+/* ロジックツリー: 角ばった箱と、かぎ線 */
+.vw-lt-node {
+  position: absolute;
+  padding: 6px 12px;
+  border: 1px solid var(--node-border);
+  border-radius: 4px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.vw-lt-node.is-root {
+  border-color: var(--root-border);
+  background: var(--root-bg);
+  font-weight: bold;
+}
+
+.vw-lt-line {
+  stroke-width: 1.5;
+}
+
+/* ---- ふつう〜むずかしい図（docs/図の種類.md） ---- */
+
+/* gantt */
+/* ガントチャート */
+.vw-gantt-chart {
+  display: block;
+  font-family: var(--font);
+}
+.vw-gantt-measure-task,
+.vw-gantt-task {
+  font-size: 13px;
+  fill: var(--fg);
+}
+.vw-gantt-measure-head,
+.vw-gantt-head {
+  font-size: 13px;
+  font-weight: 700;
+  fill: var(--fg);
+}
+.vw-gantt-measure-task,
+.vw-gantt-measure-head {
+  position: absolute;
+  visibility: hidden;
+}
+.vw-gantt-headrow {
+  fill: var(--heading-bg);
+  stroke: var(--heading-border);
+  stroke-width: 1;
+}
+.vw-gantt-axis {
+  font-size: 11px;
+  fill: var(--muted);
+}
+.vw-gantt-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+.vw-gantt-edge {
+  stroke: var(--line);
+  stroke-width: 1;
+}
+.vw-gantt-bar {
+  opacity: 0.9;
+}
+
+/* radar */
+/* レーダーチャート */
+.vw-radar-chart {
+  display: block;
+  font-family: var(--font);
+}
+.vw-radar-measure,
+.vw-radar-label {
+  font-size: 13px;
+  fill: var(--fg);
+}
+.vw-radar-measure {
+  position: absolute;
+  visibility: hidden;
+}
+.vw-radar-ring {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.vw-radar-axis {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+.vw-radar-tick {
+  font-size: 10px;
+  fill: var(--muted);
+}
+.vw-radar-area {
+  fill-opacity: 0.18;
+  stroke-width: 2;
+}
+.vw-radar-legend {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px 16px;
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--fg);
+}
+.vw-radar-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+.vw-radar-swatch {
+  display: inline-block;
+  width: 12px;
+  height: 12px;
+  border-radius: 2px;
+}
+
+/* quadrant */
+/* 4 象限マトリクス */
+.vw-qd-cell {
+  fill: var(--panel);
+}
+
+.vw-qd-cell.is-tr {
+  fill: var(--heading-bg);
+}
+
+.vw-qd-cell.is-bl {
+  fill: var(--bg);
+}
+
+.vw-qd-frame {
+  fill: none;
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.vw-qd-mid {
+  stroke: var(--line);
+  stroke-width: 1.5;
+  stroke-dasharray: 6 4;
+}
+
+.vw-qd-axis {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+.vw-qd-name {
+  font-size: 13px;
+  font-weight: bold;
+  fill: var(--fg);
+}
+
+.vw-qd-dot {
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.vw-qd-label,
+.vw-qd-probe {
+  font-size: 13px;
+}
+
+.vw-qd-label {
+  fill: var(--fg);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* scatter */
+/* 散布図 */
+.vw-sc-grid {
+  stroke: var(--border);
+  stroke-width: 1;
+}
+
+.vw-sc-frame {
+  fill: none;
+  stroke: var(--line);
+  stroke-width: 1.5;
+}
+
+.vw-sc-axis {
+  font-size: 12px;
+  fill: var(--muted);
+}
+
+.vw-sc-name {
+  font-size: 13px;
+  font-weight: bold;
+  fill: var(--fg);
+}
+
+.vw-sc-dot {
+  stroke: var(--bg);
+  stroke-width: 1.5;
+}
+
+.vw-sc-label,
+.vw-sc-probe {
+  font-size: 12px;
+}
+
+.vw-sc-label {
+  fill: var(--fg);
+  paint-order: stroke;
+  stroke: var(--bg);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* orgchart */
+/* 組織図: 箱を上から下へ、かぎ線でつなぐ */
+.vw-oc-node {
+  position: absolute;
+  padding: 6px 12px;
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.vw-oc-node.is-root {
+  border-color: var(--root-border);
+  background: var(--root-bg);
+  font-weight: bold;
+}
+
+.vw-oc-line {
+  stroke-width: 1.5;
+}
+
+/* state */
+/* 状態遷移図 */
+.vw-st-node {
+  position: absolute;
+  padding: 8px 16px;
+  border: 1.5px solid var(--node-border);
+  border-radius: 18px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.vw-st-start {
+  fill: var(--fg);
+}
+
+.vw-st-end-ring {
+  fill: var(--bg);
+  stroke: var(--fg);
+  stroke-width: 2;
+}
+
+.vw-st-end-dot {
+  fill: var(--fg);
+}
+
+/* fishbone */
+.vw-fb-spine { stroke: var(--line); stroke-width: 2; }
+.vw-fb-bone { stroke: var(--line); stroke-width: 1.5; }
+.vw-fb-arrow { fill: var(--line); }
+.vw-fb-head {
+  position: absolute; display: flex; align-items: center; justify-content: center;
+  padding: 8px 14px; border: 2px solid var(--root-border); border-radius: 8px;
+  background: var(--root-bg); color: var(--fg); font-weight: bold; text-align: center;
+}
+.vw-fb-cat {
+  position: absolute; padding: 3px 10px; border: 1px solid var(--heading-border);
+  border-radius: 6px; background: var(--heading-bg); color: var(--fg);
+  font-weight: bold; font-size: 13px; white-space: nowrap;
+}
+.vw-fb-cause { position: absolute; color: var(--fg); font-size: 13px; white-space: nowrap; }
+.vw-fb-sub { position: absolute; color: var(--muted); font-size: 12px; white-space: nowrap; }
+.vw-fb-tick { stroke: var(--line); stroke-width: 1; }
+.vw-fb-subtick { stroke: var(--line); stroke-width: 0.8; stroke-dasharray: 3 2; }
+
+/* er */
+.vw-er-table {
+  position: absolute; border: 1px solid var(--node-border); border-radius: 6px;
+  background: var(--node-bg); overflow: hidden; min-width: 120px;
+}
+.vw-er-head {
+  padding: 6px 10px; background: var(--root-bg); color: var(--fg);
+  font-weight: bold; border-bottom: 1px solid var(--node-border);
+}
+.vw-er-row {
+  display: flex; gap: 8px; align-items: baseline; justify-content: space-between;
+  padding: 3px 10px; font-size: 13px; color: var(--fg);
+}
+.vw-er-name { color: var(--fg); }
+.vw-er-type { color: var(--muted); font-size: 12px; }
+.vw-er-keys { color: var(--accent); font-size: 11px; font-weight: bold; margin-left: 4px; }
+.vw-er-none { color: var(--muted); }
+.vw-er-arrow { fill: var(--line); }
+
+/* network */
+/* 関係図 */
+.vw-nw-node {
+  position: absolute;
+  padding: 7px 14px;
+  border: 1px solid var(--node-border);
+  border-radius: 999px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+.vw-nw-node.is-hub {
+  border-color: var(--root-border);
+  background: var(--root-bg);
+  font-weight: 600;
+}
+
+/* swimlane */
+/* スイムレーン */
+.vw-sl-lane {
+  position: absolute;
+  left: 0;
+  box-sizing: border-box;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg);
+}
+
+.vw-sl-lane.is-odd {
+  background: var(--panel);
+}
+
+.vw-sl-head {
+  position: absolute;
+  left: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  border-right: 2px solid var(--heading-border);
+  background: var(--heading-bg);
+  color: var(--fg);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.vw-sl-step {
+  position: absolute;
+  z-index: 1;
+  padding: 8px 14px;
+  border: 1px solid var(--node-border);
+  border-radius: 6px;
+  background: var(--node-bg);
+  color: var(--fg);
+  font-size: 14px;
+  white-space: nowrap;
+}
+
+/* pyramid */
+.vw-py { position: relative; }
+.vw-py-step {
+  position: absolute; display: flex; align-items: center; justify-content: center;
+  color: #fff; font-size: 13px; font-weight: bold;
+}
+.vw-py-label { fill: #222; text-anchor: middle; dominant-baseline: central; }
+.vw-py-probe { position: absolute; visibility: hidden; font-size: 13px; font-weight: bold; }
+
+/* funnel */
+.vw-fn { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.vw-fn-track { display: flex; align-items: center; justify-content: center; position: relative; }
+.vw-fn-bar {
+  display: flex; align-items: center; justify-content: center;
+  height: 36px; border-radius: 4px; color: #fff; font-size: 13px; font-weight: bold;
+}
+.vw-fn-label { color: var(--fg); font-size: 13px; font-weight: bold; }
+.vw-fn-value { color: var(--fg); font-size: 13px; }
+.vw-fn-pct { color: var(--muted); font-size: 12px; margin-left: 8px; }
+
+/* gauge */
+.vw-ga { display: flex; flex-wrap: wrap; gap: 20px; }
+.vw-ga-card { display: flex; flex-direction: column; align-items: center; width: 150px; }
+.vw-ga-meter { display: block; }
+.vw-ga-track { fill: none; stroke: var(--border); }
+.vw-ga-fill { fill: none; stroke: var(--accent); stroke-linecap: round; }
+.vw-ga-over { stroke: var(--accent); opacity: 0.6; }
+.vw-ga-percent { font-size: 20px; font-weight: bold; fill: var(--fg); text-anchor: middle; dominant-baseline: central; }
+.vw-ga-label { margin-top: 4px; color: var(--fg); font-size: 14px; text-align: center; }
+.vw-ga-detail { color: var(--muted); font-size: 12px; }
+
+/* heatmap */
+.vw-hm-cell {
+  padding: 8px 14px; border: 1px solid var(--border);
+  text-align: center; font-size: 13px; color: var(--fg);
+}
+
+/* calendar */
+.vw-cal-month { margin-bottom: 20px; }
+.vw-cal-title { margin-bottom: 6px; font-weight: bold; color: var(--fg); }
+.vw-cal-table { border-collapse: collapse; }
+.vw-cal-wd {
+  padding: 4px 8px; border: 1px solid var(--border);
+  background: var(--root-bg); color: var(--fg); font-size: 12px; font-weight: bold;
+}
+.vw-cal-cell {
+  width: 92px; height: 72px; padding: 3px 5px; border: 1px solid var(--border);
+  vertical-align: top; background: var(--panel);
+}
+.vw-cal-cell:not(.is-day) { background: var(--bg); }
+.vw-cal-cell.is-weekend .vw-cal-num { color: var(--accent); }
+.vw-cal-num { font-size: 12px; color: var(--muted); margin-bottom: 2px; }
+.vw-cal-event {
+  margin-top: 2px; padding: 1px 4px; border-radius: 3px;
+  background: var(--root-bg); color: var(--fg); font-size: 11px; line-height: 1.3;
+}

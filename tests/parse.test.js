@@ -91,10 +91,18 @@ test('front matter が無ければ mindmap として扱う', () => {
 });
 
 test('未知の view はマインドマップとして表示し、注意を返す', () => {
-  const result = parse('---\nview: flowchart\n---\n# R\n', 'x');
-  assert.equal(result.view, 'flowchart');
-  assert.match(result.warning, /flowchart/);
+  const result = parse('---\nview: venn-x\n---\n# R\n', 'x');
+  assert.equal(result.view, 'venn-x');
+  assert.match(result.warning, /venn-x/);
   assert.equal(result.root.text, 'R');
+});
+
+test('知っている図の種類（flowchart など）には、注意を出さない', () => {
+  for (const view of ['flowchart', 'table', 'sequence', 'timeline']) {
+    const result = parse(`---\nview: ${view}\n---\n# R\n`, 'x');
+    assert.equal(result.view, view);
+    assert.equal(result.warning, null);
+  }
 });
 
 test('インライン記法は記号を取り除いて文字だけにする', () => {
