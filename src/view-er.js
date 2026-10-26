@@ -101,12 +101,23 @@
       if (!table.columns.length) body.appendChild(K.el('div', 'vw-er-none', '(no columns)'));
       for (const col of table.columns) {
         const row = K.el('div', 'vw-er-row');
+        // 3 列（印 / 列名 / 型）に揃える。CSS に頼らず、ここで指定する。
+        row.style.display = 'grid';
+        row.style.gridTemplateColumns = '30px 1fr auto';
+        row.style.columnGap = '8px';
+        row.style.alignItems = 'baseline';
         const keys = K.el('span', 'vw-er-keys');
+        keys.style.margin = '0';
+        keys.style.display = 'inline-flex';
+        keys.style.gap = '2px';
         if (col.pk) keys.appendChild(K.el('span', 'vw-er-badge is-pk', 'PK'));
         if (col.fk) keys.appendChild(K.el('span', 'vw-er-badge is-fk', 'FK'));
         row.appendChild(keys);
         row.appendChild(K.el('span', 'vw-er-name', col.name));
-        row.appendChild(K.el('span', 'vw-er-type', col.type));
+        const type = K.el('span', 'vw-er-type', col.type);
+        type.style.textAlign = 'right';
+        type.style.whiteSpace = 'nowrap';
+        row.appendChild(type);
         body.appendChild(row);
       }
       div.appendChild(body);
@@ -204,7 +215,14 @@
       const p = edgePoint({ ...u, y: u.y + shift }, vcx, vcy);
       const q = edgePoint({ ...v, y: v.y + shift }, ucx, ucy);
       path(`M ${p.x} ${p.y} L ${q.x} ${q.y}`);
-      addLabel(rel.label, (p.x + q.x) / 2, (p.y + q.y) / 2 - 6);
+      // 線の中点から、線に垂直な方向（上側）へ離す。
+      const ddx = q.x - p.x;
+      const ddy = q.y - p.y;
+      const len = Math.hypot(ddx, ddy) || 1;
+      let nx = ddy / len;
+      let ny = -ddx / len;
+      if (ny > 0 || (ny === 0 && nx < 0)) { nx = -nx; ny = -ny; }
+      addLabel(rel.label, (p.x + q.x) / 2 + nx * 12, (p.y + q.y) / 2 + ny * 12 + 4);
     });
     return f.done();
   }

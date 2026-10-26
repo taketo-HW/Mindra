@@ -29,8 +29,8 @@
 
   const PAD = 20;
   const SLOPE = 0.55; // 骨の傾き（縦 1 に対する横の量）
-  const CAUSE_ROW = 30; // 原因 1 つの高さ
-  const SUB_ROW = 18; // 細かい原因 1 つの高さ
+  const CAUSE_ROW = 36; // 原因 1 つの高さ
+  const SUB_ROW = 28; // 細かい原因 1 つの高さ
   const BONE_TOP = 26; // 骨の先（分類の名前）と最初の原因の間
   const BONE_BOTTOM = 22; // 最後の原因と背骨の間
   const COL_GAP = 36;
@@ -58,7 +58,7 @@
       }));
       // 骨の縦の長さ（背骨から先まで）。
       let len = BONE_TOP;
-      for (const c of causes) len += CAUSE_ROW + c.subs.length * SUB_ROW;
+      for (const c of causes) len += CAUSE_ROW + (c.subs.length ? 6 : 0) + c.subs.length * SUB_ROW;
       len += BONE_BOTTOM;
       return { up: i % 2 === 0, label, causes, len, lw: label.offsetWidth, lh: label.offsetHeight };
     });
@@ -74,8 +74,8 @@
         c.d = toD(lineT);
         c.w = c.div.offsetWidth;
         c.h = c.div.offsetHeight;
-        c.subD = c.subs.map((s, k) => toD(lineT + (k + 1) * SUB_ROW));
-        t += CAUSE_ROW + c.subs.length * SUB_ROW;
+        c.subD = c.subs.map((s, k) => toD(lineT + 6 + (k + 1) * SUB_ROW));
+        t += CAUSE_ROW + (c.subs.length ? 6 : 0) + c.subs.length * SUB_ROW;
       }
       // 背骨との交点から、左にどれだけ場所が要るか。
       let need = b.len * SLOPE + b.lw / 2;

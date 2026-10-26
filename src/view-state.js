@@ -146,7 +146,24 @@
       for (const p of L.via.get(i) || []) points.push({ x: p.x, y: p.y + p.h / 2 });
       points.push({ x: v.x, y: v.y + v.h / 2 });
       a.lines.appendChild(K.svg('path', { d: smoothPath(points), class: 'vw-edge', 'marker-end': arrow }));
-      addLabel(e.label, (points[0].x + points[1].x) / 2, (points[0].y + points[1].y) / 2 - 6);
+      // 曲線の中点から、線に垂直な向き（上側）へ離して置く。文字の大きさ分も離す。
+      const p0 = points[0];
+      const p1 = points[1];
+      const dx = p1.x - p0.x;
+      const dy = p1.y - p0.y;
+      const tx = dx;
+      const ty = 1.5 * dy;
+      const tl = Math.hypot(tx, ty) || 1;
+      let nx = -ty / tl;
+      let ny = tx / tl;
+      // 下へ進む矢印は下側、それ以外は上側に置く（兄弟の矢印との間に入らない）。
+      if (dy > 8 ? ny < 0 : ny > 0) {
+        nx = -nx;
+        ny = -ny;
+      }
+      const hw = ([...e.label].length * 12) / 2;
+      const off = 8 + Math.abs(nx) * hw + Math.abs(ny) * 8;
+      addLabel(e.label, (p0.x + p1.x) / 2 + nx * off, (p0.y + p1.y) / 2 + ny * off + 4);
     });
 
     // 開始（黒丸）と終了（二重丸）。矢印の上に描く。

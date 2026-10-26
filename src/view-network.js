@@ -87,6 +87,28 @@
     return { x: cx + dx * t, y: cy + dy * t };
   }
 
+  // 角の丸い箱（カプセル形）の縁と、中心から (dx, dy) の向きへの半直線が交わる点。gap は外側への余白。
+  function capsulePoint(cx, cy, hw, hh, dx, dy, gap) {
+    const len = Math.hypot(dx, dy);
+    if (!len) return { x: cx, y: cy };
+    const ux = dx / len;
+    const uy = dy / len;
+    const r = hh + gap;
+    const flat = Math.max(0, hw - hh); // 両端の半円の中心の、真ん中からの距離
+    let t = Infinity;
+    if (uy) {
+      const tf = r / Math.abs(uy);
+      if (Math.abs(ux * tf) <= flat) t = tf;
+    }
+    if (t === Infinity) {
+      // 端の半円: |u t - (±flat, 0)| = r を解く
+      const ccx = ux >= 0 ? flat : -flat;
+      const b = ux * ccx;
+      t = b + Math.sqrt(Math.max(0, b * b - ccx * ccx + r * r));
+    }
+    return { x: cx + ux * t, y: cy + uy * t };
+  }
+
   const PAD = 30;
   const GAP = 36; // 円の上で、隣の点との間
   const BORDER_GAP = 3; // 矢印の先と箱の間
@@ -136,6 +158,7 @@
     const pairSeen = new Map();
 
     const labels = [];
+    const edges = []; // 線ごとの通り道の点（名前の置き場所を選ぶのに使う）
     model.edges.forEach((e) => {
       const p = center[e.from];
       const q = center[e.to];
@@ -144,7 +167,12 @@
         const top = p.y - h[e.from] / 2;
         const d = `M ${p.x - 10} ${top} C ${p.x - 30} ${top - 40}, ${p.x + 30} ${top - 40}, ${p.x + 10} ${top - BORDER_GAP}`;
         a.lines.appendChild(K.svg('path', Object.assign({ d, class: 'vw-edge' }, e.directed ? { 'marker-end': arrow } : {})));
-        if (e.label) labels.push({ text: e.label, x: p.x, y: top - 34 });
+        if (e.label) {
+          const tw = K.textWidth(e.label, a.box) + 6;
+          const x = p.x;
+          const y = top - 34;
+          labels.push({ text: e.label, x, y, fixed: true, r: { x0: x - tw / 2, x1: x + tw / 2, y0: y - 8, y1: y + 8 } });
+        }
         return;
       }
       const key = pairKey(e);
@@ -159,8 +187,9 @@
       const ny = (hi.x - lo.x) / len;
       const offset = (k - (count - 1) / 2) * 44;
       const c = { x: (p.x + q.x) / 2 + nx * offset, y: (p.y + q.y) / 2 + ny * offset };
+      // 中心どうし（ふくらませた線は、ふくらみの点）に向かう線が、箱の縁と交わる点で止める。
       const end = (i, toward, gap) =>
-        borderPoint(center[i].x, center[i].y, w[i] / 2 + gap, h[i] / 2 + gap, toward.x - center[i].x, toward.y - center[i].y);
+        capsulePoint(center[i].x, center[i].y, w[i] / 2, h[i] / 2, toward.x - center[i].x, toward.y - center[i].y, gap);
       const s = end(e.from, c, 0);
       const t = end(e.to, c, e.directed ? BORDER_GAP : 0);
       const d = offset
@@ -168,12 +197,66 @@
         : `M ${s.x} ${s.y} L ${t.x} ${t.y}`;
       a.lines.appendChild(K.svg('path', Object.assign({ d, class: 'vw-edge vw-nw-edge' }, e.directed ? { 'marker-end': arrow } : {})));
       if (e.label) {
-        const mx = offset ? 0.25 * s.x + 0.5 * c.x + 0.25 * t.x : (s.x + t.x) / 2;
-        const my = offset ? 0.25 * s.y + 0.5 * c.y + 0.25 * t.y : (s.y + t.y) / 2;
-        labels.push({ text: e.label, x: mx, y: my });
+        const at = (u) => {
+          const m = 1 - u;
+          return offset
+            ? { x: m * m * s.x + 2 * m * u * c.x + u * u * t.x, y: m * m * s.y + 2 * m * u * c.y + u * u * t.y }
+            : { x: s.x + (t.x - s.x) * u, y: s.y + (t.y - s.y) * u };
+        };
+        const pts = [];
+        for (let u = 0; u <= 1.0001; u += 0.05) pts.push(at(u));
+        labels.push({ text: e.label, at, edge: edges.length });
+        edges.push(pts);
+        return;
       }
+      edges.push((() => {
+        const pts = [];
+        for (let u = 0; u <= 1.0001; u += 0.05) pts.push(offset ? { x: (1 - u) * (1 - u) * s.x + 2 * (1 - u) * u * c.x + u * u * t.x, y: (1 - u) * (1 - u) * s.y + 2 * (1 - u) * u * c.y + u * u * t.y } : { x: s.x + (t.x - s.x) * u, y: s.y + (t.y - s.y) * u });
+        return pts;
+      })());
     });
-    // 名前は線の上に描く（線の真ん中。文字の縁取りで線を隠す）。
+    // 名前は、自分の線の上のいくつかの候補から、他の線・名前・点と重ならない場所を選び、線の横にずらして置く。
+    const placed = [];
+    const nodeRects = center.map((p, i) => ({ x0: p.x - w[i] / 2, x1: p.x + w[i] / 2, y0: p.y - h[i] / 2, y1: p.y + h[i] / 2 }));
+    const hit = (r, x, y, pad) => x > r.x0 - pad && x < r.x1 + pad && y > r.y0 - pad && y < r.y1 + pad;
+    for (const l of labels) {
+      if (l.fixed) {
+        placed.push(l);
+        continue;
+      }
+      const tw = K.textWidth(l.text, a.box) + 6;
+      const th = 16;
+      let best = null;
+      for (const u of [0.5, 0.42, 0.58, 0.34, 0.66, 0.26, 0.74]) {
+        const p0 = l.at(u);
+        const p1 = l.at(Math.min(1, u + 0.02));
+        const q1 = l.at(Math.max(0, u - 0.02));
+        const tx = p1.x - q1.x;
+        const ty = p1.y - q1.y;
+        const tl = Math.hypot(tx, ty) || 1;
+        for (const side of [1, -1]) {
+          const nx = (-ty / tl) * side;
+          const ny = (tx / tl) * side;
+          const d = (Math.abs(nx) * tw) / 2 + (Math.abs(ny) * th) / 2 + 2;
+          const x = p0.x + nx * d;
+          const y = p0.y + ny * d;
+          const r = { x0: x - tw / 2, x1: x + tw / 2, y0: y - th / 2, y1: y + th / 2 };
+          let cost = Math.abs(u - 0.5) * 40 + (side < 0 ? 1 : 0);
+          edges.forEach((pts, ei) => {
+            // 自分の線は、横にずらしてあるので数えない
+            const w1 = ei === l.edge ? 0.2 : 1;
+            for (const pt of pts) if (hit(r, pt.x, pt.y, 2)) cost += 25 * w1;
+          });
+          for (const o of placed) if (r.x0 < o.r.x1 && r.x1 > o.r.x0 && r.y0 < o.r.y1 && r.y1 > o.r.y0) cost += 500;
+          for (const nr of nodeRects) if (r.x0 < nr.x1 + 3 && r.x1 > nr.x0 - 3 && r.y0 < nr.y1 + 3 && r.y1 > nr.y0 - 3) cost += 500;
+          if (!best || cost < best.cost) best = { cost, x, y, r };
+        }
+      }
+      l.x = best.x;
+      l.y = best.y;
+      l.r = best.r;
+      placed.push(l);
+    }
     for (const l of labels) {
       const label = K.svg('text', { x: l.x, y: l.y, 'text-anchor': 'middle', 'dominant-baseline': 'central', class: 'vw-label-text' });
       label.textContent = l.text;
@@ -182,5 +265,5 @@
     return f.done();
   }
 
-  global.Mindra.views.network = { parse, render, order, circle, borderPoint };
+  global.Mindra.views.network = { parse, render, order, circle, borderPoint, capsulePoint };
 })(globalThis);
